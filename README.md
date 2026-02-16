@@ -21,6 +21,8 @@
 - README 아카이브 규칙을 `REME.MD` + `HH:MM` 누적 방식으로 변경
 - `.env` 기준 Telegram 실알림 전송 및 서버 기동 점검 완료
 - Telegram 알림 문구를 한국어 기준으로 통일(티커/고유 식별값은 원문 유지)
+- Telegram 명령어 가이드 문서 추가 (`GUIME.MD`)
+- Telegram 명령 수신 기능 추가 (`/help`, `/status`, `/pause`, `/resume`, `/stop`)
 
 ## 현재 구현 범위 (1차 목표)
 - `SMA 크로스 전략` 신호 생성 (`BUY/SELL/HOLD`)
@@ -31,6 +33,7 @@
 - Docker 기반 서버 실행 지원
 
 ## 프로젝트 구조
+- `GUIME.MD`: Telegram 명령어 사용 가이드
 - `src/namoo_overseas_bot/cli.py`: 단발성 백테스트 실행 CLI
 - `src/namoo_overseas_bot/server_cli.py`: 24/7 서버 실행 CLI
 - `src/namoo_overseas_bot/telegram_check_cli.py`: Telegram 실알림 점검 CLI

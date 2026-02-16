@@ -19,6 +19,8 @@ class BotConfig:
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
+    telegram_commands_enabled: bool = True
+    telegram_poll_seconds: float = 1.0
 
     @classmethod
     def from_env(cls) -> "BotConfig":
@@ -45,6 +47,11 @@ class BotConfig:
                 "TELEGERAM_CHAT_ID",
                 default="",
             ),
+            telegram_commands_enabled=_env_bool(
+                "TELEGRAM_COMMANDS_ENABLED",
+                default=True,
+            ),
+            telegram_poll_seconds=float(os.getenv("TELEGRAM_POLL_SECONDS", "1.0")),
         )
 
 

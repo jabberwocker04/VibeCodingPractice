@@ -6,7 +6,12 @@ from namoo_overseas_bot.brokers.paper import PaperBroker
 from namoo_overseas_bot.config import BotConfig
 from namoo_overseas_bot.market_data.csv_feed import load_candles
 from namoo_overseas_bot.notifiers import NoOpNotifier, NotifierClient, TelegramNotifier
-from namoo_overseas_bot.runtime import BotApiServer, PaperTradingBot
+from namoo_overseas_bot.runtime import (
+    BotApiServer,
+    PaperTradingBot,
+    TelegramCommandHandler,
+    TelegramCommandPoller,
+)
 from namoo_overseas_bot.strategies.sma_cross import SmaCrossStrategy
 
 
@@ -64,14 +69,31 @@ def main() -> None:
 
     bot.start()
     server = BotApiServer(bot=bot, host=host, port=port)
+    command_poller: TelegramCommandPoller | None = None
+
+    if config.telegram_enabled and config.telegram_commands_enabled:
+        command_poller = TelegramCommandPoller(
+            bot_token=config.telegram_bot_token,
+            allowed_chat_id=config.telegram_chat_id,
+            notifier=notifier,
+            handler=TelegramCommandHandler(bot=bot),
+            poll_seconds=config.telegram_poll_seconds,
+        )
+        command_poller.start()
 
     bound_host, bound_port = server.server_address
     print("=== Namoo Overseas Bot Server (Paper) ===")
     print(f"symbol: {symbol}")
     print(f"api: http://{bound_host}:{bound_port}")
     print("endpoints: GET /health, GET /status, POST /pause, POST /resume, POST /stop")
+    if command_poller:
+        print("telegram commands: /help, /status, /pause, /resume, /stop")
 
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    finally:
+        if command_poller:
+            command_poller.stop()
 
 
 if __name__ == "__main__":
