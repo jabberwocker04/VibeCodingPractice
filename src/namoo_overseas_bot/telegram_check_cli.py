@@ -27,7 +27,7 @@ def main() -> None:
     message = args.message.strip()
     if not message:
         now = datetime.now(timezone.utc).isoformat()
-        message = f"[TEST] namoo-overseas-bot telegram check | utc={now}"
+        message = f"[테스트] namoo-overseas-bot Telegram 알림 점검 | utc={now}"
 
     notifier = TelegramNotifier(
         bot_token=config.telegram_bot_token,

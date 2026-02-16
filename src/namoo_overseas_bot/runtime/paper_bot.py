@@ -93,18 +93,18 @@ class PaperTradingBot:
             self._thread.start()
 
         self._safe_notify(
-            f"[START] {self.symbol} paper bot started | qty={self.quantity}, tick={self.tick_seconds}s"
+            f"[시작] {self.symbol} 페이퍼 봇 시작 | 수량={self.quantity}, 주기={self.tick_seconds}초"
         )
 
     def pause(self) -> None:
         with self._lock:
             self._status.paused = True
-        self._safe_notify(f"[PAUSE] {self.symbol} bot paused")
+        self._safe_notify(f"[일시정지] {self.symbol} 봇 일시정지")
 
     def resume(self) -> None:
         with self._lock:
             self._status.paused = False
-        self._safe_notify(f"[RESUME] {self.symbol} bot resumed")
+        self._safe_notify(f"[재개] {self.symbol} 봇 재개")
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -113,7 +113,7 @@ class PaperTradingBot:
         thread = self._thread
         if thread and thread.is_alive():
             thread.join(timeout=5)
-        self._safe_notify(f"[STOP] {self.symbol} bot stopped")
+        self._safe_notify(f"[중지] {self.symbol} 봇 중지")
 
     def process_next_candle(self) -> None:
         candle = self.candles[self._cursor % len(self.candles)]
@@ -130,13 +130,13 @@ class PaperTradingBot:
                     price=candle.close,
                     timestamp=candle.timestamp,
                 )
-                fill_message = f"[FILL] BUY {fill.qty} {fill.symbol} @ {fill.price:.2f}"
+                fill_message = f"[체결] 매수 {fill.qty} {fill.symbol} @ {fill.price:.2f}"
                 with self._lock:
                     self._status.trades += 1
             else:
                 fill_message = (
-                    f"[SKIP] BUY blocked by max_position_qty={self.max_position_qty} "
-                    f"(current={current_pos})"
+                    f"[건너뜀] 매수 제한 | max_position_qty={self.max_position_qty}, "
+                    f"current={current_pos}"
                 )
 
         if signal == Signal.SELL and self.broker.position_qty(self.symbol) >= self.quantity:
@@ -145,7 +145,7 @@ class PaperTradingBot:
                 price=candle.close,
                 timestamp=candle.timestamp,
             )
-            fill_message = f"[FILL] SELL {fill.qty} {fill.symbol} @ {fill.price:.2f}"
+            fill_message = f"[체결] 매도 {fill.qty} {fill.symbol} @ {fill.price:.2f}"
             with self._lock:
                 self._status.trades += 1
 
@@ -164,7 +164,8 @@ class PaperTradingBot:
 
         if signal != Signal.HOLD:
             self._safe_notify(
-                f"[SIGNAL] {self.symbol} {signal.value.upper()} | price={candle.close:.2f} | ts={candle.timestamp}"
+                f"[신호] {self.symbol} {self._signal_to_korean(signal)} | "
+                f"price={candle.close:.2f} | ts={candle.timestamp}"
             )
         if fill_message:
             self._safe_notify(fill_message)
@@ -183,7 +184,7 @@ class PaperTradingBot:
             except Exception as exc:  # pragma: no cover - defensive runtime path
                 with self._lock:
                     self._status.last_error = str(exc)
-                self._safe_notify(f"[ERROR] runtime exception: {exc}")
+                self._safe_notify(f"[오류] 런타임 예외: {exc}")
             time.sleep(self.tick_seconds)
 
     def _is_paused(self) -> bool:
@@ -196,3 +197,11 @@ class PaperTradingBot:
         except Exception:
             # Notifications should never crash trading runtime.
             return
+
+    @staticmethod
+    def _signal_to_korean(signal: Signal) -> str:
+        if signal == Signal.BUY:
+            return "매수"
+        if signal == Signal.SELL:
+            return "매도"
+        return "대기"

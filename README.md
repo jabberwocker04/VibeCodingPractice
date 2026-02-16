@@ -20,6 +20,7 @@
 - Telegram 실알림 점검 CLI 추가 (`namoo-telegram-check`)
 - README 아카이브 규칙을 `REME.MD` + `HH:MM` 누적 방식으로 변경
 - `.env` 기준 Telegram 실알림 전송 및 서버 기동 점검 완료
+- Telegram 알림 문구를 한국어 기준으로 통일(티커/고유 식별값은 원문 유지)
 
 ## 현재 구현 범위 (1차 목표)
 - `SMA 크로스 전략` 신호 생성 (`BUY/SELL/HOLD`)
