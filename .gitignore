@@ -4,3 +4,14 @@ __pycache__/
 .env
 .openclaw/
 .tools/
+
+# OpenClaw workspace metadata (local-only)
+AGENTS.md
+BOOTSTRAP.md
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
+MEMORY.md
+memory/

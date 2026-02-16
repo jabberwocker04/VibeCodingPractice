@@ -5,8 +5,9 @@
 
 ## README 관리 규칙
 - 최신 문서는 루트 `README.md`로 유지합니다.
-- 구버전 문서는 `README/YYYY-MM-DD_REME.MD` 파일에 보관합니다.
+- 구버전 문서는 `README/YYYY-MM-DD_README.MD` 파일에 보관합니다.
 - 같은 날짜에 여러 번 변경되면 해당 파일에 `HH:MM` 섹션을 추가해 시간순으로 누적 기록합니다.
+- 기존 오타 파일(`REME`)은 레거시 기록으로 유지하고, 신규 기록부터 `README` 형식을 사용합니다.
 
 ## 보안/개인정보 원칙
 - 개인 정보, 키, 토큰, 계정 식별값은 `README.md`에 기록하지 않습니다.
@@ -20,7 +21,7 @@
 - 제어 API 서버 추가 (`GET /health`, `GET /status`, `POST /pause`, `POST /resume`, `POST /stop`)
 - 서버 실행 CLI 추가 (`namoo-bot-server`)
 - Telegram 실알림 점검 CLI 추가 (`namoo-telegram-check`)
-- README 아카이브 규칙을 `REME.MD` + `HH:MM` 누적 방식으로 변경
+- README 아카이브 규칙을 `README.MD` + `HH:MM` 누적 방식으로 변경
 - `.env` 기준 Telegram 실알림 전송 및 서버 기동 점검 완료
 - Telegram 알림 문구를 한국어 기준으로 통일(티커/고유 식별값은 원문 유지)
 - Telegram 명령어 가이드 문서 추가 (`GUIME.MD`)
@@ -53,7 +54,8 @@ VibeCodingPractice/
 ├── data/
 │   └── sample_us_stock.csv
 ├── README/
-│   └── 2026-02-16_REME.MD
+│   ├── 2026-02-16_README.MD
+│   └── 2026-02-16_REME.MD   # legacy
 ├── src/
 │   └── namoo_overseas_bot/
 │       ├── cli.py
@@ -164,3 +166,32 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 ## 최종 목표 대비 현재 진행도 (2026-02-16)
 - 대략 **42%**
 - 기준: 1차 목표 구현 + OpenClaw 분리 연동 + 로컬 전용 보안 정책(토큰/루프백/명령 토글) 반영 완료, 2~4차 목표(나무 조회/실주문/실운영)는 본격 구현 전 단계
+
+## 2026-02-16 작업 요약 (보안 우선)
+반영 전 상태:
+- 제어 API는 인증 없이 동작 가능한 기본 구성 위험이 있었고, 외부 바인딩 설정 여지가 있었습니다.
+- OpenClaw는 Telegram 채널 연동은 되었지만, 코딩 에이전트 응답용 모델 인증이 준비되지 않았습니다.
+- 트레이딩봇 Telegram 명령은 영문 `/help` 중심이었습니다.
+
+반영 후 상태:
+- 제어 API는 `BOT_API_TOKEN` 인증을 적용하고 로컬 전용(`127.0.0.1`) 정책으로 고정했습니다.
+- Docker 포트도 루프백(`127.0.0.1:8080:8080`)으로 제한했습니다.
+- OpenClaw와 트레이딩봇 Telegram 토큰을 분리 운영하도록 정리/적용했습니다.
+- 트레이딩봇 Telegram 명령 제어 API(`GET/POST /telegram-commands*`)를 추가했습니다.
+- `/명령어` 한글 명령 별칭을 추가해 명령 목록을 바로 확인 가능하게 했습니다.
+- OpenClaw 워크스페이스를 프로젝트 루트(`/home/wsl/VibeCodingPractice`)로 전환했습니다.
+
+장점:
+- 외부 노출 면이 크게 줄어 운영 리스크가 낮아졌습니다.
+- OpenClaw를 중심으로 Codex 작업/트레이딩봇 제어를 분리 운영할 기반이 생겼습니다.
+- 실운영 전환 시 트레이딩봇 Telegram 명령 OFF 전환이 API로 즉시 가능합니다.
+
+단점/트레이드오프:
+- OpenClaw 코딩 대화는 모델 API 키 등록이 완료돼야 동작합니다.
+- 로컬 전용 정책 때문에 원격 제어는 별도 터널/프록시 없이는 불가능합니다.
+- 기존 `REME` 파일명 레거시가 남아 문서 규칙이 과거 기록과 혼재됩니다.
+
+하루 Vibe Coding 요약:
+- 봇 런타임/Telegram 제어/문서 체계를 확장하고, OpenClaw 연동을 실사용 기준으로 재정렬했습니다.
+- 보안 정책은 “외부 비공개 + 토큰 인증 + 토큰 분리”로 수렴했습니다.
+- 다음 실질 블로커는 OpenClaw 코딩 모델 인증(Anthropic/OpenAI 키 등록)입니다.
