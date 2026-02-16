@@ -100,7 +100,7 @@ def main() -> None:
     )
     if command_poller:
         print(
-            "telegram commands: /help, /status, /pause, /resume, /stop "
+            "telegram commands: /help, /명령어, /status, /pause, /resume, /stop "
             f"(enabled={command_poller.is_commands_enabled()})"
         )
 

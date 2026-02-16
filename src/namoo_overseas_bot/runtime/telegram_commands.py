@@ -17,7 +17,7 @@ class TelegramCommandHandler:
     def handle(self, text: str) -> str:
         cmd = text.strip().split()[0].lower() if text.strip() else ""
 
-        if cmd in {"/help", "help"}:
+        if cmd in {"/help", "help", "/명령어", "명령어"}:
             return self._help_message()
 
         if cmd == "/status":
@@ -40,13 +40,14 @@ class TelegramCommandHandler:
             self.bot.stop()
             return "[명령] 중지 요청 완료"
 
-        return "[안내] 지원하지 않는 명령입니다. /help 를 입력하세요."
+        return "[안내] 지원하지 않는 명령입니다. /help 또는 /명령어 를 입력하세요."
 
     @staticmethod
     def _help_message() -> str:
         return (
             "[명령어]\n"
             "/help - 명령어 목록\n"
+            "/명령어 - 명령어 목록(한글)\n"
             "/status - 현재 상태 조회\n"
             "/pause - 매매 루프 일시정지\n"
             "/resume - 매매 루프 재개\n"

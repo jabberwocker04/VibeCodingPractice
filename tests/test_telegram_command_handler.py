@@ -45,6 +45,13 @@ class TelegramCommandHandlerTests(unittest.TestCase):
         handler = TelegramCommandHandler(bot=_FakeBot())
         text = handler.handle("/help")
         self.assertIn("/status", text)
+        self.assertIn("/명령어", text)
+
+    def test_korean_help_alias(self) -> None:
+        handler = TelegramCommandHandler(bot=_FakeBot())
+        text = handler.handle("/명령어")
+        self.assertIn("/help", text)
+        self.assertIn("/status", text)
 
     def test_status(self) -> None:
         handler = TelegramCommandHandler(bot=_FakeBot())

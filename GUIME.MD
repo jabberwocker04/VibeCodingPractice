@@ -16,6 +16,7 @@ namoo-bot-server --csv data/sample_us_stock.csv --symbol AAPL
 
 ## Telegram 명령어
 - `/help`: 명령어 목록 확인
+- `/명령어`: 명령어 목록 확인(한글 별칭)
 - `/status`: 현재 상태 조회
   - running/paused, trades, position, cash, equity, last_signal, last_price
 - `/pause`: 매매 루프 일시정지
