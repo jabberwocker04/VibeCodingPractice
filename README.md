@@ -30,6 +30,7 @@
 - 보안 점검/대응 문서 분리 (`SECURITY.MD`)
 - 트레이딩봇 Telegram 명령 On/Off 제어 API 추가
 - 브랜치 운영 분리(`main/GPT/Claude`) 정책 추가
+- 브랜치별 리뷰/권고 문서 추가 (`BRANCH_REVIEW.MD`)
 
 ## 현재 구현 범위 (1차 목표)
 - `SMA 크로스 전략` 신호 생성 (`BUY/SELL/HOLD`)
@@ -48,6 +49,7 @@ VibeCodingPractice/
 ├── OPENCLAW.MD
 ├── SECURITY.MD
 ├── BRANCHING.MD
+├── BRANCH_REVIEW.MD
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
