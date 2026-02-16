@@ -24,6 +24,8 @@
 - Telegram 명령어 가이드 문서 추가 (`GUIME.MD`)
 - Telegram 명령 수신 기능 추가 (`/help`, `/status`, `/pause`, `/resume`, `/stop`)
 - OpenClaw 연동 정리 문서 분리 (`OPENCLAW.MD`)
+- 보안 점검/대응 문서 분리 (`SECURITY.MD`)
+- 트레이딩봇 Telegram 명령 On/Off 제어 API 추가
 
 ## 현재 구현 범위 (1차 목표)
 - `SMA 크로스 전략` 신호 생성 (`BUY/SELL/HOLD`)
@@ -40,6 +42,7 @@ VibeCodingPractice/
 ├── GUIDE.MD
 ├── GUIME.MD
 ├── OPENCLAW.MD
+├── SECURITY.MD
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
@@ -102,6 +105,10 @@ namoo-bot-server --csv data/sample_us_stock.csv --symbol AAPL
 - `POST /pause`: 매매 루프 일시정지
 - `POST /resume`: 매매 루프 재개
 - `POST /stop`: 매매 루프 중지 + 서버 종료
+- `GET /telegram-commands`: Telegram 명령 수행 ON/OFF 상태 조회
+- `POST /telegram-commands/enable`: Telegram 명령 수행 ON
+- `POST /telegram-commands/disable`: Telegram 명령 수행 OFF
+- 선택형 인증: `BOT_API_TOKEN` 설정 시 `Authorization: Bearer <token>` 또는 `X-API-Token` 필요
 
 ## Docker 실행
 ```bash
@@ -115,6 +122,7 @@ curl http://127.0.0.1:8080/status
 - 전략/주문: `BOT_SYMBOL`, `BOT_QUANTITY`, `BOT_SHORT_WINDOW`, `BOT_LONG_WINDOW`
 - 자금/제한: `BOT_INITIAL_CASH_USD`, `BOT_MAX_POSITION_QTY`
 - 런타임: `BOT_TICK_SECONDS`, `BOT_SERVER_HOST`, `BOT_SERVER_PORT`
+- API 보안: `BOT_API_TOKEN` (선택형)
 - Telegram: `TELEGRAM_ENABLED`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
 - 오타 호환(임시): `TELEGRAM_BOT_TOKE`, `TELEGERAM_CHAT_ID`
 

@@ -1,6 +1,9 @@
 import unittest
 
-from namoo_overseas_bot.runtime.telegram_commands import TelegramCommandHandler
+from namoo_overseas_bot.runtime.telegram_commands import (
+    TelegramCommandHandler,
+    TelegramCommandPoller,
+)
 
 
 class _FakeBot:
@@ -32,6 +35,11 @@ class _FakeBot:
         }
 
 
+class _NoopNotifier:
+    def send(self, message: str) -> None:
+        _ = message
+
+
 class TelegramCommandHandlerTests(unittest.TestCase):
     def test_help(self) -> None:
         handler = TelegramCommandHandler(bot=_FakeBot())
@@ -56,6 +64,22 @@ class TelegramCommandHandlerTests(unittest.TestCase):
 
         _ = handler.handle("/stop")
         self.assertTrue(bot.stopped)
+
+    def test_poller_command_enable_toggle(self) -> None:
+        poller = TelegramCommandPoller(
+            bot_token="dummy-token",
+            allowed_chat_id="1",
+            notifier=_NoopNotifier(),
+            handler=TelegramCommandHandler(bot=_FakeBot()),
+            commands_enabled=True,
+        )
+        self.assertTrue(poller.is_commands_enabled())
+
+        poller.set_commands_enabled(False)
+        self.assertFalse(poller.is_commands_enabled())
+
+        poller.set_commands_enabled(True)
+        self.assertTrue(poller.is_commands_enabled())
 
 
 if __name__ == "__main__":

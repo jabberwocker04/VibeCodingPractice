@@ -16,6 +16,7 @@ class BotConfig:
     max_position_qty: int = 5
     server_host: str = "0.0.0.0"
     server_port: int = 8080
+    api_token: str = ""
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
@@ -36,6 +37,7 @@ class BotConfig:
             max_position_qty=int(os.getenv("BOT_MAX_POSITION_QTY", "5")),
             server_host=os.getenv("BOT_SERVER_HOST", "0.0.0.0"),
             server_port=int(os.getenv("BOT_SERVER_PORT", "8080")),
+            api_token=os.getenv("BOT_API_TOKEN", ""),
             telegram_enabled=_env_bool("TELEGRAM_ENABLED", default=False),
             telegram_bot_token=_first_env(
                 "TELEGRAM_BOT_TOKEN",

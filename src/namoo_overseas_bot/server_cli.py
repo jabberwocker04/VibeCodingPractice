@@ -68,26 +68,41 @@ def main() -> None:
     )
 
     bot.start()
-    server = BotApiServer(bot=bot, host=host, port=port)
     command_poller: TelegramCommandPoller | None = None
 
-    if config.telegram_enabled and config.telegram_commands_enabled:
+    if config.telegram_enabled:
         command_poller = TelegramCommandPoller(
             bot_token=config.telegram_bot_token,
             allowed_chat_id=config.telegram_chat_id,
             notifier=notifier,
             handler=TelegramCommandHandler(bot=bot),
             poll_seconds=config.telegram_poll_seconds,
+            commands_enabled=config.telegram_commands_enabled,
         )
         command_poller.start()
+
+    server = BotApiServer(
+        bot=bot,
+        host=host,
+        port=port,
+        telegram_commands=command_poller,
+        api_token=config.api_token,
+    )
 
     bound_host, bound_port = server.server_address
     print("=== Namoo Overseas Bot Server (Paper) ===")
     print(f"symbol: {symbol}")
     print(f"api: http://{bound_host}:{bound_port}")
     print("endpoints: GET /health, GET /status, POST /pause, POST /resume, POST /stop")
+    print(
+        "telegram command control: GET /telegram-commands, "
+        "POST /telegram-commands/enable, POST /telegram-commands/disable"
+    )
     if command_poller:
-        print("telegram commands: /help, /status, /pause, /resume, /stop")
+        print(
+            "telegram commands: /help, /status, /pause, /resume, /stop "
+            f"(enabled={command_poller.is_commands_enabled()})"
+        )
 
     try:
         server.serve_forever()

@@ -63,16 +63,27 @@ class TelegramCommandPoller:
         notifier: NotifierClient,
         handler: TelegramCommandHandler,
         poll_seconds: float = 1.0,
+        commands_enabled: bool = True,
     ) -> None:
         self.bot_token = bot_token
         self.allowed_chat_id = str(allowed_chat_id)
         self.notifier = notifier
         self.handler = handler
         self.poll_seconds = poll_seconds
+        self._commands_enabled = commands_enabled
 
         self._offset = 0
+        self._enabled_lock = threading.Lock()
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
+
+    def is_commands_enabled(self) -> bool:
+        with self._enabled_lock:
+            return self._commands_enabled
+
+    def set_commands_enabled(self, enabled: bool) -> None:
+        with self._enabled_lock:
+            self._commands_enabled = enabled
 
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
@@ -103,6 +114,9 @@ class TelegramCommandPoller:
 
                     text = str(message.get("text", "")).strip()
                     if not text.startswith("/"):
+                        continue
+
+                    if not self.is_commands_enabled():
                         continue
 
                     response = self.handler.handle(text)

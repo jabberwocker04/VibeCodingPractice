@@ -7,6 +7,7 @@
 - 로컬 Gateway 실행
 - Telegram 채널 연동 확인
 - 테스트 메시지 송신 검증
+- 트레이딩봇 Telegram 명령 수행 On/Off 제어 연동 준비
 
 ## 비대화형 온보딩으로 진행한 이유
 - IDE/에이전트 실행 환경에서 동일 설정을 빠르게 재현하기 위해
@@ -51,3 +52,29 @@ openclaw message send \
 - 현재 구성은 로컬(loopback) 바인딩 기준입니다.
 - 민감정보(토큰/키)는 `.env`와 OpenClaw 로컬 상태 파일에서만 관리합니다.
 - `.openclaw/`, `.tools/`는 Git 추적에서 제외합니다.
+- 트레이딩봇 Telegram 토큰과 OpenClaw Telegram 토큰은 분리 운영합니다.
+- 참고: 현재 OpenClaw Telegram 채널은 CLI에서 사용자 allowlist(`jabberwocker0` 등) 직접 설정을 지원하지 않습니다.
+
+## 트레이딩봇 Telegram 명령 On/Off 제어 (미래 전환용)
+1. 현재 상태 조회
+```bash
+curl -s http://127.0.0.1:8080/telegram-commands
+```
+
+2. 명령 수행 OFF
+```bash
+curl -s -X POST http://127.0.0.1:8080/telegram-commands/disable
+```
+
+3. 명령 수행 ON
+```bash
+curl -s -X POST http://127.0.0.1:8080/telegram-commands/enable
+```
+
+4. API 토큰 적용 시 호출 예시
+```bash
+curl -s \
+  -H "Authorization: Bearer $BOT_API_TOKEN" \
+  -X POST \
+  http://127.0.0.1:8080/telegram-commands/disable
+```
