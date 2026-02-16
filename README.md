@@ -1,2 +1,61 @@
 # VibeCodingPractice
-바이브코딩 연습해봅니다.
+
+나무증권(NH) 해외주식 자동매매를 목표로 한 봇 MVP입니다.
+현재는 **전략 엔진 + 페이퍼 브로커 + 나무 연동 스텁**까지 구현되어 있고,
+실주문은 `NamooOverseasBroker`에 API 연결 코드를 추가하면 됩니다.
+
+## 최신 업데이트 (2026-02-16)
+- 해외주식 봇 기본 구조 추가 (`src/namoo_overseas_bot/*`)
+- 페이퍼트레이딩 엔진 + SMA 전략 + CLI 실행 경로 추가
+- 샘플 데이터(`data/sample_us_stock.csv`) 및 단위 테스트(`tests/*`) 추가
+- 환경 파일 예시(`.env.example`)와 Python 캐시 제외용 `.gitignore` 추가
+- 이 업데이트는 Git 커밋/원격 푸시 기준으로 관리됩니다.
+
+## 현재 구현 범위
+- `SMA 크로스 전략` 신호 생성 (`BUY/SELL/HOLD`)
+- `PaperBroker`로 페이퍼 매매 실행
+- CSV 시세 데이터 기반 시뮬레이션
+- CLI 실행 (`namoo-bot`)
+- 기본 단위 테스트
+- 나무 해외주식 실연동용 스텁 클래스 제공
+
+## 프로젝트 구조
+- `src/namoo_overseas_bot/cli.py`: 실행 진입점
+- `src/namoo_overseas_bot/engine.py`: 전략 + 브로커 실행 엔진
+- `src/namoo_overseas_bot/strategies/sma_cross.py`: SMA 전략
+- `src/namoo_overseas_bot/brokers/paper.py`: 페이퍼 브로커
+- `src/namoo_overseas_bot/brokers/namoo_stub.py`: 나무 API 연동 스텁
+- `src/namoo_overseas_bot/market_data/csv_feed.py`: CSV 데이터 로더
+- `data/sample_us_stock.csv`: 샘플 해외주식 시세 데이터
+
+## 빠른 실행
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+namoo-bot --csv data/sample_us_stock.csv --symbol AAPL
+```
+
+## 환경변수
+`.env.example` 참고:
+- `BOT_SYMBOL`
+- `BOT_QUANTITY`
+- `BOT_SHORT_WINDOW`
+- `BOT_LONG_WINDOW`
+- `BOT_INITIAL_CASH_USD`
+
+## 테스트
+```bash
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+```
+
+## 나무 해외주식 실연동 시 다음 작업
+1. 나무 Open API 해외주식 주문/잔고/체결 TR 확인
+2. `NamooOverseasBroker.submit_order/cash_balance/position_qty` 구현
+3. 주문 전 리스크 체크(최대 보유수량, 일손실 한도, 장시간 체크) 추가
+4. 실거래 전 모의투자/소액 검증
+
+## 주의사항
+- 이 코드는 학습/개발용입니다. 실거래 손실 책임은 사용자에게 있습니다.
+- 실거래 시 주문 제한, 인증 만료, 장 운영시간, 환율/수수료를 반드시 반영해야 합니다.
