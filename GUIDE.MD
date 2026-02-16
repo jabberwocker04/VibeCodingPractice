@@ -32,3 +32,22 @@ namoo-bot-server --csv data/sample_us_stock.csv --symbol AAPL
 namoo-telegram-check
 ```
 
+## 장애 대응 가이드 (임시 운영안)
+1. 명령을 보냈는데 반응이 없을 때
+- 먼저 `/help`를 보내 기본 응답 여부를 확인합니다.
+- `.env`의 `TELEGRAM_CHAT_ID`가 현재 채팅 ID와 일치하는지 확인합니다.
+- `TELEGRAM_ENABLED=true`와 `TELEGRAM_COMMANDS_ENABLED=true`가 설정됐는지 확인합니다.
+
+2. `/status`가 오래된 값으로 보일 때
+- 봇 서버가 살아있는지 `GET /health`로 확인합니다.
+- 장시간 네트워크 불안정 시 명령 폴링이 지연될 수 있으므로 서버를 재기동합니다.
+
+3. 봇이 멈췄거나 비정상 동작할 때
+- 제어 API `POST /stop`으로 안전 종료 후 재시작합니다.
+- 재시작 후 첫 명령은 `/status`로 현재 상태를 확인한 뒤 운영을 재개합니다.
+
+4. 권장 운영 절차
+- 운영 시작 직후 `/status`
+- 일시 중지 필요 시 `/pause`
+- 재개 시 `/resume`
+- 종료 시 `/stop`
