@@ -7,5 +7,5 @@ services:
     env_file:
       - .env
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     command: ["namoo-bot-server", "--csv", "data/sample_us_stock.csv"]

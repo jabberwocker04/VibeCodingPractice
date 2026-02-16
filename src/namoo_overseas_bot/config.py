@@ -14,7 +14,7 @@ class BotConfig:
     initial_cash_usd: float = 10_000.0
     tick_seconds: float = 3.0
     max_position_qty: int = 5
-    server_host: str = "0.0.0.0"
+    server_host: str = "127.0.0.1"
     server_port: int = 8080
     api_token: str = ""
     telegram_enabled: bool = False
@@ -35,7 +35,7 @@ class BotConfig:
             initial_cash_usd=float(os.getenv("BOT_INITIAL_CASH_USD", "10000")),
             tick_seconds=float(os.getenv("BOT_TICK_SECONDS", "3")),
             max_position_qty=int(os.getenv("BOT_MAX_POSITION_QTY", "5")),
-            server_host=os.getenv("BOT_SERVER_HOST", "0.0.0.0"),
+            server_host=os.getenv("BOT_SERVER_HOST", "127.0.0.1"),
             server_port=int(os.getenv("BOT_SERVER_PORT", "8080")),
             api_token=os.getenv("BOT_API_TOKEN", ""),
             telegram_enabled=_env_bool("TELEGRAM_ENABLED", default=False),
