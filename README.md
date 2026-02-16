@@ -34,15 +34,55 @@
 - Docker 기반 서버 실행 지원
 
 ## 프로젝트 구조
-- `GUIME.MD`: Telegram 명령어 사용 가이드
-- `OPENCLAW.MD`: OpenClaw 연동/운영 가이드
-- `src/namoo_overseas_bot/cli.py`: 단발성 백테스트 실행 CLI
-- `src/namoo_overseas_bot/server_cli.py`: 24/7 서버 실행 CLI
-- `src/namoo_overseas_bot/telegram_check_cli.py`: Telegram 실알림 점검 CLI
-- `src/namoo_overseas_bot/runtime/paper_bot.py`: 페이퍼 런타임
-- `src/namoo_overseas_bot/runtime/api_server.py`: 제어 API 서버
-- `src/namoo_overseas_bot/notifiers/telegram.py`: Telegram 알림
-- `src/namoo_overseas_bot/brokers/namoo_stub.py`: 나무 실연동 스텁
+```text
+VibeCodingPractice/
+├── README.md
+├── GUIDE.MD
+├── GUIME.MD
+├── OPENCLAW.MD
+├── .env.example
+├── .gitignore
+├── pyproject.toml
+├── Dockerfile
+├── docker-compose.yml
+├── data/
+│   └── sample_us_stock.csv
+├── README/
+│   └── 2026-02-16_REME.MD
+├── src/
+│   └── namoo_overseas_bot/
+│       ├── cli.py
+│       ├── server_cli.py
+│       ├── telegram_check_cli.py
+│       ├── config.py
+│       ├── engine.py
+│       ├── models.py
+│       ├── brokers/
+│       │   ├── base.py
+│       │   ├── paper.py
+│       │   └── namoo_stub.py
+│       ├── strategies/
+│       │   └── sma_cross.py
+│       ├── market_data/
+│       │   └── csv_feed.py
+│       ├── notifiers/
+│       │   ├── base.py
+│       │   ├── noop.py
+│       │   └── telegram.py
+│       └── runtime/
+│           ├── paper_bot.py
+│           ├── api_server.py
+│           └── telegram_commands.py
+├── tests/
+│   ├── test_strategy.py
+│   ├── test_paper_broker.py
+│   ├── test_paper_trading_bot.py
+│   ├── test_api_server.py
+│   ├── test_config.py
+│   └── test_telegram_command_handler.py
+├── .openclaw/   # OpenClaw 상태/설정 (gitignore)
+└── .tools/      # 로컬 Node/OpenClaw 실행 도구 (gitignore)
+```
 
 ## 로컬 실행
 ```bash
@@ -109,3 +149,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 ## 주의사항
 - 이 코드는 학습/개발용입니다. 실거래 손실 책임은 사용자에게 있습니다.
 - 실거래 전 모의/소액 검증과 API 제한사항 확인이 필수입니다.
+
+## 최종 목표 대비 현재 진행도 (2026-02-16)
+- 대략 **35%**
+- 기준: 1차 목표(페이퍼 트레이딩 + Telegram 제어 + 24/7 런타임)는 구현 완료, 2~4차 목표(나무 조회/실주문/실운영)는 본격 구현 전 단계
