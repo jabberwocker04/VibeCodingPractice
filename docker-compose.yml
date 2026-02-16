@@ -1,0 +1,11 @@
+services:
+  namoo-overseas-bot:
+    build:
+      context: .
+    container_name: namoo-overseas-bot
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    command: ["namoo-bot-server", "--csv", "data/sample_us_stock.csv"]

@@ -4,12 +4,17 @@
 현재는 **전략 엔진 + 페이퍼 브로커 + 나무 연동 스텁**까지 구현되어 있고,
 실주문은 `NamooOverseasBroker`에 API 연결 코드를 추가하면 됩니다.
 
+## README 관리 규칙
+- 최신 문서는 루트 `README.md`로 유지합니다.
+- 업데이트 전 문서는 `README/` 폴더에 보관합니다.
+- 보관 파일명 형식: `YYYY-MM-DD_REAMD.ME`
+
 ## 최신 업데이트 (2026-02-16)
 - 해외주식 봇 기본 구조 추가 (`src/namoo_overseas_bot/*`)
 - 페이퍼트레이딩 엔진 + SMA 전략 + CLI 실행 경로 추가
 - 샘플 데이터(`data/sample_us_stock.csv`) 및 단위 테스트(`tests/*`) 추가
 - 환경 파일 예시(`.env.example`)와 Python 캐시 제외용 `.gitignore` 추가
-- 이 업데이트는 Git 커밋/원격 푸시 기준으로 관리됩니다.
+- README 아카이브 정책 적용 (`README/2026-02-16_REAMD.ME` 생성)
 
 ## 현재 구현 범위
 - `SMA 크로스 전략` 신호 생성 (`BUY/SELL/HOLD`)
