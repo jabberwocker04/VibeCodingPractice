@@ -5,16 +5,21 @@
 
 ## README 관리 규칙
 - 최신 문서는 루트 `README.md`로 유지합니다.
-- 업데이트 전 문서는 `README/` 폴더에 보관합니다.
-- 보관 파일명 형식: `YYYY-MM-DD_REAMD.ME`
+- 구버전 문서는 `README/YYYY-MM-DD_REME.MD` 파일에 보관합니다.
+- 같은 날짜에 여러 번 변경되면 해당 파일에 `HH:MM` 섹션을 추가해 시간순으로 누적 기록합니다.
+
+## 보안/개인정보 원칙
+- 개인 정보, 키, 토큰, 계정 식별값은 `README.md`에 기록하지 않습니다.
+- 민감정보는 로컬 `.env`로만 관리하고 Git에 커밋하지 않습니다.
 
 ## 최신 업데이트 (2026-02-16)
 - Telegram 알림 인터페이스 및 구현 추가 (`NoOpNotifier`, `TelegramNotifier`)
 - 24/7 실행 런타임 추가 (`PaperTradingBot`)
 - 제어 API 서버 추가 (`GET /health`, `GET /status`, `POST /pause`, `POST /resume`, `POST /stop`)
 - 서버 실행 CLI 추가 (`namoo-bot-server`)
-- 운영용 파일 추가 (`Dockerfile`, `docker-compose.yml`)
-- 런타임/서버 테스트 추가 (`tests/test_paper_trading_bot.py`, `tests/test_api_server.py`)
+- Telegram 실알림 점검 CLI 추가 (`namoo-telegram-check`)
+- README 아카이브 규칙을 `REME.MD` + `HH:MM` 누적 방식으로 변경
+- `.env` 기준 Telegram 실알림 전송 및 서버 기동 점검 완료
 
 ## 현재 구현 범위 (1차 목표)
 - `SMA 크로스 전략` 신호 생성 (`BUY/SELL/HOLD`)
@@ -27,21 +32,21 @@
 ## 프로젝트 구조
 - `src/namoo_overseas_bot/cli.py`: 단발성 백테스트 실행 CLI
 - `src/namoo_overseas_bot/server_cli.py`: 24/7 서버 실행 CLI
+- `src/namoo_overseas_bot/telegram_check_cli.py`: Telegram 실알림 점검 CLI
 - `src/namoo_overseas_bot/runtime/paper_bot.py`: 페이퍼 런타임
 - `src/namoo_overseas_bot/runtime/api_server.py`: 제어 API 서버
 - `src/namoo_overseas_bot/notifiers/telegram.py`: Telegram 알림
 - `src/namoo_overseas_bot/brokers/namoo_stub.py`: 나무 실연동 스텁
 
-## 빠른 실행 (로컬)
+## 로컬 실행
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 
 cp .env.example .env
-# Telegram을 먼저 테스트하려면 .env에서 TELEGRAM_ENABLED=true 로 변경 후
-# TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID 설정
-
+# .env에 Telegram 설정 입력 후
+namoo-telegram-check
 namoo-bot-server --csv data/sample_us_stock.csv --symbol AAPL
 ```
 
@@ -51,15 +56,6 @@ namoo-bot-server --csv data/sample_us_stock.csv --symbol AAPL
 - `POST /pause`: 매매 루프 일시정지
 - `POST /resume`: 매매 루프 재개
 - `POST /stop`: 매매 루프 중지 + 서버 종료
-
-예시:
-```bash
-curl http://127.0.0.1:8080/health
-curl http://127.0.0.1:8080/status
-curl -X POST http://127.0.0.1:8080/pause
-curl -X POST http://127.0.0.1:8080/resume
-curl -X POST http://127.0.0.1:8080/stop
-```
 
 ## Docker 실행
 ```bash
@@ -74,6 +70,14 @@ curl http://127.0.0.1:8080/status
 - 자금/제한: `BOT_INITIAL_CASH_USD`, `BOT_MAX_POSITION_QTY`
 - 런타임: `BOT_TICK_SECONDS`, `BOT_SERVER_HOST`, `BOT_SERVER_PORT`
 - Telegram: `TELEGRAM_ENABLED`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+- 오타 호환(임시): `TELEGRAM_BOT_TOKE`, `TELEGERAM_CHAT_ID`
+
+## 입력 대기 정보 (사용자 제공 예정)
+- 이전 요청의 3번 항목(실사용 기본값):
+  - `BOT_SYMBOL`
+  - `BOT_QUANTITY`
+  - `BOT_MAX_POSITION_QTY`
+  - `BOT_TICK_SECONDS`
 
 ## 테스트
 ```bash
