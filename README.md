@@ -29,6 +29,7 @@
 - OpenClaw 연동 정리 문서 분리 (`OPENCLAW.MD`)
 - 보안 점검/대응 문서 분리 (`SECURITY.MD`)
 - 트레이딩봇 Telegram 명령 On/Off 제어 API 추가
+- 브랜치 운영 분리(`main/GPT/Claude`) 정책 추가
 
 ## 현재 구현 범위 (1차 목표)
 - `SMA 크로스 전략` 신호 생성 (`BUY/SELL/HOLD`)
@@ -46,6 +47,7 @@ VibeCodingPractice/
 ├── GUIME.MD
 ├── OPENCLAW.MD
 ├── SECURITY.MD
+├── BRANCHING.MD
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
@@ -141,6 +143,24 @@ curl http://127.0.0.1:8080/status
 ## 테스트
 ```bash
 PYTHONPATH=src python3 -m unittest discover -s tests -v
+```
+
+## 브랜치 운영 전략
+- `main`: GPT(OpenAI) 기준 운영 브랜치
+- `GPT`: GPT 실험/개선 브랜치(필요 시 `main`과 동기화)
+- `Claude`: Claude(Anthropic) 기준 스냅샷 보관 브랜치
+
+브랜치 전환 명령:
+```bash
+git switch main
+git switch GPT
+git switch Claude
+```
+
+`main`에서 `GPT` 동기화 예시:
+```bash
+git switch GPT
+git merge --ff-only main
 ```
 
 ## 다음 단계 로드맵 (나무 실연동까지)

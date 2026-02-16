@@ -55,6 +55,31 @@ openclaw message send \
   --message "[OpenClaw] Telegram 연동 테스트 완료"
 ```
 
+## GPT(OpenAI) 코딩 대화 연동
+1. OpenAI API 키 등록
+```bash
+openclaw models auth paste-token --provider openai
+```
+
+2. 사용 가능한 OpenAI 모델 확인
+```bash
+openclaw models list --provider openai --plain
+```
+
+3. 기본 모델을 GPT 계열로 지정
+```bash
+openclaw models set <openai-model-id>
+```
+
+4. Telegram 경유 코딩 응답 테스트
+```bash
+openclaw agent \
+  --to 8496080743 \
+  --channel telegram \
+  --message "코딩 연결 테스트: 현재 프로젝트 구조 요약" \
+  --deliver
+```
+
 ## 운영 메모
 - 현재 구성은 로컬(loopback) 바인딩 기준입니다.
 - 민감정보(토큰/키)는 `.env`와 OpenClaw 로컬 상태 파일에서만 관리합니다.
@@ -62,6 +87,11 @@ openclaw message send \
 - 트레이딩봇 Telegram 토큰과 OpenClaw Telegram 토큰은 분리 운영합니다.
 - 참고: 현재 OpenClaw Telegram 채널은 CLI에서 사용자 allowlist(`jabberwocker0` 등) 직접 설정을 지원하지 않습니다.
 - 트레이딩봇 제어 API는 `BOT_SERVER_HOST=127.0.0.1` + `BOT_API_TOKEN` 조합으로 운영합니다.
+
+## 브랜치 정책
+- `main`: GPT(OpenAI) 운영 기준
+- `GPT`: GPT 관련 실험/검증 브랜치
+- `Claude`: Claude 기준 스냅샷 보관 브랜치
 
 ## 트레이딩봇 Telegram 명령 On/Off 제어 (미래 전환용)
 1. 현재 상태 조회
