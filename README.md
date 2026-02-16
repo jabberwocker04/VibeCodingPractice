@@ -50,6 +50,24 @@ namoo-bot --csv data/sample_us_stock.csv --symbol AAPL
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
+## GitHub 연동 (항상 유지 설정)
+이 저장소는 SSH 원격을 사용하도록 설정되어 있습니다.
+
+```bash
+git remote -v
+# origin git@github.com:jabberwocker04/VibeCodingPractice.git
+```
+
+지속 사용을 위해 다음 항목을 전역으로 구성했습니다.
+- SSH 키: `~/.ssh/id_ed25519_github`
+- SSH 설정: `~/.ssh/config`
+- 로그인 시 키 자동 로드: `~/.bashrc`
+- Git 전역 SSH 커맨드: `core.sshCommand=ssh -i ~/.ssh/id_ed25519_github -o IdentitiesOnly=yes`
+
+초기 1회는 GitHub 계정에 공개키 등록이 필요합니다.
+- 공개키 파일: `~/.ssh/id_ed25519_github.pub`
+- GitHub 메뉴: `Settings > SSH and GPG keys > New SSH key`
+
 ## 나무 해외주식 실연동 시 다음 작업
 1. 나무 Open API 해외주식 주문/잔고/체결 TR 확인
 2. `NamooOverseasBroker.submit_order/cash_balance/position_qty` 구현
