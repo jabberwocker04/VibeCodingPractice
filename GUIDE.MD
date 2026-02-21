@@ -33,6 +33,104 @@ namoo-bot-server --csv data/sample_us_stock.csv --symbol AAPL
 namoo-telegram-check
 ```
 
+## OpenClaw Git Skill (GitHub)
+`gh` CLI 기반으로 GitHub 작업을 자동화합니다. **git repo 디렉터리 밖에서는 반드시 `--repo owner/repo`를 지정**하세요.
+
+### PR/CI
+- PR 체크 상태
+```bash
+gh pr checks <PR번호> --repo owner/repo
+```
+- 최근 워크플로우 실행 목록
+```bash
+gh run list --repo owner/repo --limit 10
+```
+- 특정 실행 상세 보기
+```bash
+gh run view <run-id> --repo owner/repo
+```
+- 실패 로그만 보기
+```bash
+gh run view <run-id> --repo owner/repo --log-failed
+```
+
+### API 고급 조회
+- PR 상세 필드 조회
+```bash
+gh api repos/owner/repo/pulls/55 --jq '.title, .state, .user.login'
+```
+
+### JSON 출력/필터
+- 이슈 목록(JSON)
+```bash
+gh issue list --repo owner/repo --json number,title --jq '.[] | "\(.number): \(.title)"'
+```
+
+## 나무 실조회/재기동 자동화 (Windows PowerShell)
+아래는 `scripts/windows/` 기준 자동화입니다.
+
+### 1) Phase1 실조회 검증 (권장 선행)
+언제 실행:
+- 최초 셋업 직후
+- 계정/비밀번호/hash44 변경 직후
+- 장 시작 전 상태 확인이 필요할 때
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\phase1_wmca_check.ps1 `
+  -DllPath C:\wmca\bin\wmca.dll `
+  -AccountIndex 1 `
+  -AccountPasswordHash44 <계좌비밀번호_hash44> `
+  -OrderDate 20260217 `
+  -LoginId <OpenAPI_ID> -LoginPassword <OpenAPI_로그인비밀번호> -CertPassword <인증서비밀번호>
+```
+
+결과 로그:
+- `data/wmca_phase1_logs/<timestamp>/summary.json`
+- `data/wmca_phase1_logs/<timestamp>/balance.json`
+- `data/wmca_phase1_logs/<timestamp>/positions.json`
+- `data/wmca_phase1_logs/<timestamp>/orders.json`
+
+### 2) 브리지/봇 재기동 자동화
+언제 실행:
+- 서버 장애 후 재기동 시
+- 운영 시작 시 브리지와 봇을 순차 기동할 때
+
+브리지만 기동:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\start_stack.ps1 `
+  -DllPath C:\wmca\bin\wmca.dll `
+  -AccountIndex 1 `
+  -AccountPasswordHash44 <계좌비밀번호_hash44> `
+  -OrderDate 20260217 `
+  -LoginId <OpenAPI_ID> -LoginPassword <OpenAPI_로그인비밀번호> -CertPassword <인증서비밀번호> `
+  -BridgeToken <브리지_API_토큰>
+```
+
+브리지 + 봇 동시 기동:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\start_stack.ps1 `
+  -DllPath C:\wmca\bin\wmca.dll `
+  -AccountIndex 1 `
+  -AccountPasswordHash44 <계좌비밀번호_hash44> `
+  -OrderDate 20260217 `
+  -LoginId <OpenAPI_ID> -LoginPassword <OpenAPI_로그인비밀번호> -CertPassword <인증서비밀번호> `
+  -BridgeToken <브리지_API_토큰> `
+  -StartBotServer `
+  -BotCsvPath data/sample_us_stock.csv `
+  -BotSymbol AAPL
+```
+
+빠른 재기동(이미 장중 검증을 마친 경우):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\start_stack.ps1 `
+  -SkipPhase1 `
+  -DllPath C:\wmca\bin\wmca.dll `
+  -AccountIndex 1 `
+  -AccountPasswordHash44 <계좌비밀번호_hash44> `
+  -BridgeToken <브리지_API_토큰> `
+  -StartBotServer
+```
+
 ## 장애 대응 가이드 (임시 운영안)
 1. 명령을 보냈는데 반응이 없을 때
 - 먼저 `/help`를 보내 기본 응답 여부를 확인합니다.
