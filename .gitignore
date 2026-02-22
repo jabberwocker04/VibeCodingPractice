@@ -2,16 +2,8 @@ __pycache__/
 *.py[cod]
 .venv/
 .env
-.openclaw/
-.tools/
 
-# OpenClaw workspace metadata (local-only)
-AGENTS.md
-BOOTSTRAP.md
-HEARTBEAT.md
-IDENTITY.md
-SOUL.md
-TOOLS.md
-USER.md
-MEMORY.md
-memory/
+
+# Local OpenAPI vendor bundle (do not commit)
+openapi.nm.zip
+data/openapi_nm/

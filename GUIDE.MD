@@ -33,40 +33,7 @@ namoo-bot-server --csv data/sample_us_stock.csv --symbol AAPL
 namoo-telegram-check
 ```
 
-## OpenClaw Git Skill (GitHub)
-`gh` CLI 기반으로 GitHub 작업을 자동화합니다. **git repo 디렉터리 밖에서는 반드시 `--repo owner/repo`를 지정**하세요.
-
-### PR/CI
-- PR 체크 상태
-```bash
-gh pr checks <PR번호> --repo owner/repo
-```
-- 최근 워크플로우 실행 목록
-```bash
-gh run list --repo owner/repo --limit 10
-```
-- 특정 실행 상세 보기
-```bash
-gh run view <run-id> --repo owner/repo
-```
-- 실패 로그만 보기
-```bash
-gh run view <run-id> --repo owner/repo --log-failed
-```
-
-### API 고급 조회
-- PR 상세 필드 조회
-```bash
-gh api repos/owner/repo/pulls/55 --jq '.title, .state, .user.login'
-```
-
-### JSON 출력/필터
-- 이슈 목록(JSON)
-```bash
-gh issue list --repo owner/repo --json number,title --jq '.[] | "\(.number): \(.title)"'
-```
-
-## 나무 실조회/재기동 자동화 (Windows PowerShell)
+나무 실조회/재기동 자동화 (Windows PowerShell)
 아래는 `scripts/windows/` 기준 자동화입니다.
 
 ### 1) Phase1 실조회 검증 (권장 선행)
