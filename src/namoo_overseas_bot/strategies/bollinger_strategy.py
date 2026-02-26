@@ -40,6 +40,21 @@ class BollingerStrategy(BaseStrategy):
         self._prices.clear()
         self._last_signal = Signal.HOLD
 
+    def get_params(self) -> dict[str, object]:
+        return {"period": self.period, "std_dev": self.std_dev}
+
+    def update_params(self, **kwargs: object) -> None:
+        period = int(kwargs.get("period", self.period))
+        std_dev = float(kwargs.get("std_dev", self.std_dev))
+        if period < 2:
+            raise ValueError("period must be >= 2")
+        if std_dev <= 0:
+            raise ValueError("std_dev must be positive")
+        self.period = period
+        self.std_dev = std_dev
+        self._prices = deque(maxlen=period)
+        self._last_signal = Signal.HOLD
+
     def on_price(self, price: float) -> Signal:
         self._prices.append(price)
         if len(self._prices) < self.period:

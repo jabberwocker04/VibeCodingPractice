@@ -23,3 +23,17 @@ class BaseStrategy(ABC):
     def name(self) -> str:
         """Human-readable strategy name."""
         ...
+
+    @abstractmethod
+    def get_params(self) -> dict[str, object]:
+        """Return current strategy parameters as a dict."""
+        ...
+
+    @abstractmethod
+    def update_params(self, **kwargs: object) -> None:
+        """Dynamically update strategy parameters and reset internal state.
+
+        Raises ValueError for invalid parameter values.
+        Unknown keys are silently ignored.
+        """
+        ...

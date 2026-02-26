@@ -56,6 +56,27 @@ class MacdStrategy(BaseStrategy):
         self._last_signal = Signal.HOLD
         self._price_count = 0
 
+    def get_params(self) -> dict[str, object]:
+        return {
+            "fast_period": self.fast_period,
+            "slow_period": self.slow_period,
+            "signal_period": self.signal_period,
+        }
+
+    def update_params(self, **kwargs: object) -> None:
+        fast = int(kwargs.get("fast_period", self.fast_period))
+        slow = int(kwargs.get("slow_period", self.slow_period))
+        signal = int(kwargs.get("signal_period", self.signal_period))
+        if fast <= 0 or slow <= 0 or signal <= 0:
+            raise ValueError("all periods must be positive")
+        if fast >= slow:
+            raise ValueError("fast_period must be less than slow_period")
+        self.fast_period = fast
+        self.slow_period = slow
+        self.signal_period = signal
+        self._macd_history = deque(maxlen=signal)
+        self.reset()
+
     def on_price(self, price: float) -> Signal:
         self._price_count += 1
 

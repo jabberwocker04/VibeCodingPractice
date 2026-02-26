@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import threading
@@ -98,6 +99,10 @@ class LiveTradingBot:
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
+
+        # 가격/거래 히스토리 (프론트엔드 차트용)
+        self._price_history: deque[dict[str, object]] = deque(maxlen=200)
+        self._trade_history: deque[dict[str, object]] = deque(maxlen=50)
 
     def start(self) -> None:
         with self._lock:
@@ -212,6 +217,13 @@ class LiveTradingBot:
                     )
                     with self._lock:
                         self._status.trades += 1
+                        self._trade_history.append({
+                            "ts": now,
+                            "side": "buy",
+                            "price": price,
+                            "qty": self.quantity,
+                            "symbol": self.symbol,
+                        })
                 except ValueError as e:
                     fill_message = f"[건너뜀] 매수 실패: {e}"
             else:
@@ -234,6 +246,13 @@ class LiveTradingBot:
                     )
                     with self._lock:
                         self._status.trades += 1
+                        self._trade_history.append({
+                            "ts": now,
+                            "side": "sell",
+                            "price": price,
+                            "qty": self.quantity,
+                            "symbol": self.symbol,
+                        })
                 except ValueError as e:
                     fill_message = f"[건너뜀] 매도 실패: {e}"
 
@@ -253,6 +272,13 @@ class LiveTradingBot:
             self._status.pnl = pnl
             self._status.pnl_pct = pnl_pct
             self._status.loop_count += 1
+            self._price_history.append({
+                "ts": now,
+                "price": price,
+                "equity": equity,
+                "pnl": pnl,
+                "signal": signal.value,
+            })
 
         if signal != Signal.HOLD:
             self._safe_notify(
@@ -277,3 +303,94 @@ class LiveTradingBot:
     def _signal_to_korean(signal: Signal) -> str:
         mapping = {Signal.BUY: "매수", Signal.SELL: "매도", Signal.HOLD: "대기"}
         return mapping.get(signal, "대기")
+
+    # ------------------------------------------------------------------ #
+    # 런타임 동적 제어 메서드
+    # ------------------------------------------------------------------ #
+
+    def swap_strategy(self, new_strategy: BaseStrategy) -> None:
+        """실행 중에 전략을 교체하고 자동으로 워밍업을 재실행합니다."""
+        with self._lock:
+            self.strategy = new_strategy
+            self._status.strategy = new_strategy.name
+            self._status.last_signal = Signal.HOLD.value
+        threading.Thread(
+            target=self._warmup_strategy,
+            name="strategy-warmup",
+            daemon=True,
+        ).start()
+        self._safe_notify(
+            f"[전략교체] {self.company_name}({self.symbol}): {new_strategy.name}으로 교체\n"
+            f"파라미터: {new_strategy.get_params()}"
+        )
+
+    def update_strategy_params(self, **kwargs: object) -> None:
+        """현재 전략의 파라미터를 수정하고 워밍업을 재실행합니다."""
+        with self._lock:
+            self.strategy.update_params(**kwargs)
+            self._status.strategy = self.strategy.name
+            self._status.last_signal = Signal.HOLD.value
+        threading.Thread(
+            target=self._warmup_strategy,
+            name="param-warmup",
+            daemon=True,
+        ).start()
+        self._safe_notify(
+            f"[파라미터수정] {self.company_name}({self.symbol}): {self.strategy.name}\n"
+            f"새 파라미터: {self.strategy.get_params()}"
+        )
+
+    def update_trading_config(
+        self,
+        *,
+        quantity: int | None = None,
+        max_position_qty: int | None = None,
+        tick_seconds: float | None = None,
+    ) -> None:
+        """트레이딩 설정(수량·최대보유·틱 간격)을 동적으로 수정합니다."""
+        with self._lock:
+            if quantity is not None:
+                if quantity <= 0:
+                    raise ValueError("quantity must be positive")
+                self.quantity = quantity
+            if max_position_qty is not None:
+                if max_position_qty < self.quantity:
+                    raise ValueError("max_position_qty must be >= quantity")
+                self.max_position_qty = max_position_qty
+            if tick_seconds is not None:
+                if tick_seconds <= 0:
+                    raise ValueError("tick_seconds must be positive")
+                self.tick_seconds = tick_seconds
+        self._safe_notify(
+            f"[설정변경] {self.symbol}: 수량={self.quantity}주 "
+            f"최대={self.max_position_qty}주 틱={self.tick_seconds}초"
+        )
+
+    def get_trading_config(self) -> dict[str, object]:
+        """현재 트레이딩 설정을 반환합니다."""
+        with self._lock:
+            return {
+                "quantity": self.quantity,
+                "max_position_qty": self.max_position_qty,
+                "tick_seconds": self.tick_seconds,
+                "interval": self.interval,
+                "history_period": self.history_period,
+            }
+
+    def get_strategy_info(self) -> dict[str, object]:
+        """현재 전략 이름과 파라미터를 반환합니다."""
+        with self._lock:
+            return {
+                "name": self.strategy.name,
+                "params": self.strategy.get_params(),
+            }
+
+    def get_price_history(self) -> list[dict[str, object]]:
+        """차트용 가격 히스토리를 반환합니다 (최근 200틱)."""
+        with self._lock:
+            return list(self._price_history)
+
+    def get_trade_history(self) -> list[dict[str, object]]:
+        """최근 체결 내역을 반환합니다 (최근 50건)."""
+        with self._lock:
+            return list(self._trade_history)

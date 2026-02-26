@@ -38,6 +38,23 @@ class RsiStrategy(BaseStrategy):
         self._prices.clear()
         self._last_signal = Signal.HOLD
 
+    def get_params(self) -> dict[str, object]:
+        return {"period": self.period, "oversold": self.oversold, "overbought": self.overbought}
+
+    def update_params(self, **kwargs: object) -> None:
+        period = int(kwargs.get("period", self.period))
+        oversold = float(kwargs.get("oversold", self.oversold))
+        overbought = float(kwargs.get("overbought", self.overbought))
+        if period < 2:
+            raise ValueError("period must be >= 2")
+        if not (0 < oversold < overbought < 100):
+            raise ValueError("oversold/overbought must satisfy 0 < oversold < overbought < 100")
+        self.period = period
+        self.oversold = oversold
+        self.overbought = overbought
+        self._prices = deque(maxlen=period + 1)
+        self._last_signal = Signal.HOLD
+
     def on_price(self, price: float) -> Signal:
         self._prices.append(price)
         if len(self._prices) < self.period + 1:

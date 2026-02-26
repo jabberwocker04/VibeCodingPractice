@@ -26,6 +26,21 @@ class SmaCrossStrategy(BaseStrategy):
         self._prices.clear()
         self._last_signal = Signal.HOLD
 
+    def get_params(self) -> dict[str, object]:
+        return {"short_window": self.short_window, "long_window": self.long_window}
+
+    def update_params(self, **kwargs: object) -> None:
+        short = int(kwargs.get("short_window", self.short_window))
+        long_ = int(kwargs.get("long_window", self.long_window))
+        if short <= 0 or long_ <= 0:
+            raise ValueError("window sizes must be positive")
+        if short >= long_:
+            raise ValueError("short_window must be smaller than long_window")
+        self.short_window = short
+        self.long_window = long_
+        self._prices = deque(maxlen=long_)
+        self._last_signal = Signal.HOLD
+
     def on_price(self, price: float) -> Signal:
         self._prices.append(price)
         if len(self._prices) < self.long_window:

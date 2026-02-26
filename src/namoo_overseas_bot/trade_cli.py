@@ -99,6 +99,9 @@ def build_parser() -> argparse.ArgumentParser:
     # 실행 모드
     parser.add_argument("--backtest", action="store_true", help="백테스트 모드 (과거 데이터만 사용)")
     parser.add_argument("--tick", type=float, default=None, help="틱 간격 초 (라이브 모드, 기본: 60)")
+    parser.add_argument("--serve", action="store_true", help="API 서버 + 웹 대시보드 함께 실행")
+    parser.add_argument("--host", default=None, help="API 서버 호스트 (기본: config)")
+    parser.add_argument("--port", type=int, default=None, help="API 서버 포트 (기본: config)")
 
     # 전략 파라미터
     parser.add_argument("--short-window", type=int, default=5, help="SMA 단기 윈도우 (기본: 5)")
@@ -229,8 +232,15 @@ def run_live(
     quantity: int,
     max_position_qty: int,
     tick_seconds: float,
+    serve: bool = False,
+    server_host: str = "127.0.0.1",
+    server_port: int = 8080,
+    api_token: str = "",
 ) -> None:
     """실시간 자동매매를 실행합니다."""
+    from namoo_overseas_bot.runtime.api_server import LiveBotApiServer
+    from namoo_overseas_bot.runtime.telegram_commands import LiveBotCommandHandler
+
     bot = LiveTradingBot(
         broker=broker,
         strategy=strategy,
@@ -244,9 +254,20 @@ def run_live(
         max_position_qty=max_position_qty,
     )
 
+    api_server: LiveBotApiServer | None = None
+    if serve:
+        api_server = LiveBotApiServer(
+            bot=bot,
+            host=server_host,
+            port=server_port,
+            api_token=api_token,
+        )
+
     def _shutdown(signum, frame):
         print("\n\n[종료] 봇을 안전하게 종료합니다...")
         bot.stop()
+        if api_server:
+            api_server.shutdown()
         status = bot.status()
         print(f"최종 자산: ${status['equity']:,.2f} | 손익: ${status['pnl']:+,.2f} ({status['pnl_pct']:+.2f}%)")
         sys.exit(0)
@@ -257,9 +278,17 @@ def run_live(
     print(f"\n[라이브] {company_name}({symbol}) 자동매매 시작")
     print(f"전략: {strategy.name} | 주기: {interval} | 틱 간격: {tick_seconds}초")
     print(f"초기 자금: ${broker.cash_balance():,.2f} | 1회 수량: {quantity}주")
+    if serve and api_server:
+        h, p = api_server.server_address
+        print(f"웹 대시보드: http://{h}:{p}")
+        print(f"API: http://{h}:{p}/status")
     print("종료하려면 Ctrl+C를 누르세요.\n")
 
     bot.start()
+
+    if api_server:
+        import threading as _threading
+        _threading.Thread(target=api_server.serve_forever, name="api-server", daemon=True).start()
 
     try:
         while True:
@@ -376,6 +405,10 @@ def main() -> None:
             quantity=quantity,
             max_position_qty=max_qty,
             tick_seconds=tick_seconds,
+            serve=args.serve,
+            server_host=args.host or config.server_host,
+            server_port=args.port or config.server_port,
+            api_token=config.api_token,
         )
 
 
