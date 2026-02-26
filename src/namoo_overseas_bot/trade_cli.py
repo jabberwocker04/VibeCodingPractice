@@ -15,6 +15,7 @@ import signal
 import sys
 import time
 
+from namoo_overseas_bot.brokers.kis_broker import KisBroker, resolve_kis_exchange
 from namoo_overseas_bot.brokers.paper import PaperBroker
 from namoo_overseas_bot.config import BotConfig
 from namoo_overseas_bot.market_data.symbol_resolver import resolve_symbol, get_company_info
@@ -86,6 +87,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="캔들 주기 (기본: 1d)",
     )
     parser.add_argument("--period", default="6mo", help="히스토리 데이터 기간 (기본: 6mo)")
+
+    # 브로커 선택
+    parser.add_argument(
+        "--broker", "-b",
+        choices=["paper", "kis"],
+        default="paper",
+        help="브로커 선택: paper(모의, 기본), kis(한국투자증권 실계좌)",
+    )
 
     # 실행 모드
     parser.add_argument("--backtest", action="store_true", help="백테스트 모드 (과거 데이터만 사용)")
@@ -213,7 +222,7 @@ def run_live(
     symbol: str,
     company_name: str,
     strategy: BaseStrategy,
-    broker: PaperBroker,
+    broker: PaperBroker | KisBroker,
     notifier: NotifierClient,
     interval: str,
     period: str,
@@ -302,7 +311,33 @@ def main() -> None:
     print(f"전략: {strategy.name} ({STRATEGY_DESCRIPTIONS.get(args.strategy, '')})")
 
     # 브로커 생성
-    broker = PaperBroker(initial_cash_usd=cash)
+    broker: PaperBroker | KisBroker
+    if args.broker == "kis":
+        if not config.kis_app_key or not config.kis_app_secret or not config.kis_account_no:
+            print(
+                "오류: KIS 브로커를 사용하려면 .env에 다음 항목을 설정하세요:\n"
+                "  KIS_APP_KEY=...\n"
+                "  KIS_APP_SECRET=...\n"
+                "  KIS_ACCOUNT_NO=...\n"
+                "KIS Developers 가입: https://apiportal.koreainvestment.com"
+            )
+            sys.exit(1)
+        # 거래소 코드: .env 설정 우선, 그 다음 yfinance 거래소 정보 자동 감지
+        exchange_code = config.kis_exchange_code
+        if exchange_code == "NASD" and info.get("exchange") not in ("N/A", ""):
+            exchange_code = resolve_kis_exchange(info["exchange"])
+        broker = KisBroker(
+            app_key=config.kis_app_key,
+            app_secret=config.kis_app_secret,
+            account_no=config.kis_account_no,
+            is_virtual=config.kis_is_virtual,
+            exchange_code=exchange_code,
+        )
+        mode = "모의투자" if config.kis_is_virtual else "실전투자"
+        print(f"브로커: 한국투자증권 KIS ({mode}) | 계좌: {config.kis_account_no} | 거래소: {exchange_code}")
+    else:
+        broker = PaperBroker(initial_cash_usd=cash)
+        print(f"브로커: Paper (모의매매) | 초기자금: ${cash:,.2f}")
 
     # 알리미 생성
     if config.telegram_enabled and config.telegram_bot_token and config.telegram_chat_id:
@@ -316,11 +351,14 @@ def main() -> None:
         print("텔레그램 알림: 비활성화 (.env 파일에서 TELEGRAM_ENABLED=true로 설정)")
 
     if args.backtest:
+        if args.broker == "kis":
+            print("안내: 백테스트는 KIS 브로커를 지원하지 않습니다. paper 브로커로 자동 전환합니다.")
+            broker = PaperBroker(initial_cash_usd=cash)
         run_backtest(
             symbol=symbol,
             company_name=company_name,
             strategy=strategy,
-            broker=broker,
+            broker=broker,  # type: ignore[arg-type]
             interval=args.interval,
             period=args.period,
             quantity=quantity,
