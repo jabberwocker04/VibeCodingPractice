@@ -3,9 +3,10 @@ from __future__ import annotations
 from collections import deque
 
 from namoo_overseas_bot.models import Signal
+from namoo_overseas_bot.strategies.base import BaseStrategy
 
 
-class SmaCrossStrategy:
+class SmaCrossStrategy(BaseStrategy):
     def __init__(self, short_window: int, long_window: int) -> None:
         if short_window <= 0 or long_window <= 0:
             raise ValueError("window sizes must be positive")
@@ -15,6 +16,14 @@ class SmaCrossStrategy:
         self.short_window = short_window
         self.long_window = long_window
         self._prices = deque(maxlen=long_window)
+        self._last_signal = Signal.HOLD
+
+    @property
+    def name(self) -> str:
+        return f"SMA({self.short_window},{self.long_window})"
+
+    def reset(self) -> None:
+        self._prices.clear()
         self._last_signal = Signal.HOLD
 
     def on_price(self, price: float) -> Signal:
