@@ -8,6 +8,177 @@ from typing import Protocol
 
 from namoo_overseas_bot.runtime.paper_bot import PaperTradingBot
 
+_DASHBOARD_HTML = """\
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Bot Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; min-height: 100vh; }
+  h1 { color: #38bdf8; font-size: 1.6rem; margin-bottom: 20px; }
+  h3 { color: #94a3b8; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
+  .metric { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #1e293b; }
+  .metric:last-child { border-bottom: none; }
+  .metric-label { color: #64748b; font-size: 0.9rem; }
+  .metric-value { font-weight: 600; font-size: 0.95rem; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+  .badge-running { background: #166534; color: #4ade80; }
+  .badge-paused  { background: #78350f; color: #fbbf24; }
+  .badge-stopped { background: #7f1d1d; color: #f87171; }
+  .signal-buy  { color: #4ade80; }
+  .signal-sell { color: #f87171; }
+  .signal-hold { color: #94a3b8; }
+  .btn { padding: 9px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; margin: 4px 4px 4px 0; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-pause  { background: #d97706; color: #fff; }
+  .btn-resume { background: #16a34a; color: #fff; }
+  .btn-stop   { background: #dc2626; color: #fff; }
+  .token-wrap { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .token-input { flex: 1; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; }
+  .token-input:focus { outline: 2px solid #38bdf8; }
+  .btn-save { background: #334155; color: #e2e8f0; }
+  .hint { color: #64748b; font-size: 0.8rem; margin-top: 4px; }
+  .error-msg { color: #f87171; }
+  .ctrl-msg { font-size: 0.85rem; margin-top: 10px; color: #94a3b8; min-height: 1.2em; }
+  .last-update { color: #475569; font-size: 0.78rem; margin-top: 16px; text-align: right; }
+  .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #334155; border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<h1>Trading Bot Dashboard</h1>
+<div class="grid">
+
+  <div class="card" id="card-status">
+    <h3><span class="spinner" id="spinner"></span>봇 상태</h3>
+    <div id="statusContent"><div class="hint">로딩 중...</div></div>
+  </div>
+
+  <div class="card">
+    <h3>제어</h3>
+    <button class="btn btn-pause"  onclick="control('pause')">일시정지</button>
+    <button class="btn btn-resume" onclick="control('resume')">재개</button>
+    <button class="btn btn-stop"   onclick="control('stop')" onclick="return confirm('정말 중지합니까?')">중지</button>
+    <div class="ctrl-msg" id="ctrlMsg"></div>
+  </div>
+
+  <div class="card">
+    <h3>API 토큰</h3>
+    <div class="token-wrap">
+      <input type="password" id="apiToken" class="token-input" placeholder="토큰 없으면 비워두세요">
+      <button class="btn btn-save" onclick="saveToken()">저장</button>
+    </div>
+    <div class="hint" id="tokenHint">브라우저 localStorage에만 저장됩니다.</div>
+  </div>
+
+</div>
+<div class="last-update" id="lastUpdate"></div>
+
+<script>
+(function () {
+  var token = localStorage.getItem('botApiToken') || '';
+  if (token) document.getElementById('apiToken').value = token;
+
+  function saveToken() {
+    token = document.getElementById('apiToken').value.trim();
+    localStorage.setItem('botApiToken', token);
+    document.getElementById('tokenHint').textContent = '저장 완료.';
+    fetchStatus();
+  }
+  window.saveToken = saveToken;
+
+  function headers() {
+    var h = {};
+    if (token) h['Authorization'] = 'Bearer ' + token;
+    return h;
+  }
+
+  function signalClass(s) {
+    if (s === 'buy')  return 'signal-buy';
+    if (s === 'sell') return 'signal-sell';
+    return 'signal-hold';
+  }
+  function signalText(s) {
+    if (s === 'buy')  return '매수';
+    if (s === 'sell') return '매도';
+    return '대기';
+  }
+  function badge(running, paused) {
+    if (!running) return '<span class="badge badge-stopped">정지</span>';
+    if (paused)   return '<span class="badge badge-paused">일시정지</span>';
+    return '<span class="badge badge-running">실행중</span>';
+  }
+  function row(label, value) {
+    return '<div class="metric"><span class="metric-label">' + label +
+           '</span><span class="metric-value">' + value + '</span></div>';
+  }
+
+  function fetchStatus() {
+    fetch('/status', {headers: headers()})
+      .then(function(r) {
+        if (r.status === 401) throw new Error('401');
+        return r.json();
+      })
+      .then(function(d) {
+        var sigClass = signalClass(d.last_signal);
+        var html = row('상태', badge(d.running, d.paused))
+          + row('심볼', d.symbol || '-')
+          + row('신호', '<span class="' + sigClass + '">' + signalText(d.last_signal) + '</span>')
+          + row('가격', '$' + (d.last_price || 0).toFixed(2))
+          + row('현금', '$' + (d.cash || 0).toFixed(2))
+          + row('평가금액', '$' + (d.equity || 0).toFixed(2))
+          + row('포지션 수량', d.position_qty)
+          + row('총 거래', d.trades)
+          + row('루프 수', d.loop_count)
+          + row('시작 (UTC)', d.started_at_utc || '-')
+          + row('마지막 캔들', d.last_candle_timestamp || '-');
+        if (d.last_error) html += row('오류', '<span class="error-msg">' + d.last_error + '</span>');
+        document.getElementById('statusContent').innerHTML = html;
+        document.getElementById('lastUpdate').textContent = '갱신: ' + new Date().toLocaleTimeString();
+        document.getElementById('spinner').style.display = '';
+      })
+      .catch(function(e) {
+        var msg = e.message === '401'
+          ? '<div class="error-msg">인증 실패 — API 토큰을 확인하세요.</div>'
+          : '<div class="error-msg">서버 연결 실패</div>';
+        document.getElementById('statusContent').innerHTML = msg;
+        document.getElementById('spinner').style.display = 'none';
+      });
+  }
+
+  function control(action) {
+    var el = document.getElementById('ctrlMsg');
+    el.textContent = action + ' 요청 중...';
+    fetch('/' + action, {method: 'POST', headers: headers()})
+      .then(function(r) {
+        if (r.status === 401) throw new Error('401');
+        return r.json();
+      })
+      .then(function() {
+        el.textContent = action + ' 완료';
+        fetchStatus();
+      })
+      .catch(function(e) {
+        el.innerHTML = e.message === '401'
+          ? '<span class="error-msg">인증 실패</span>'
+          : '<span class="error-msg">요청 실패</span>';
+      });
+  }
+  window.control = control;
+
+  fetchStatus();
+  setInterval(fetchStatus, 3000);
+})();
+</script>
+</body>
+</html>
+"""
+
 
 class TelegramCommandsToggle(Protocol):
     def is_commands_enabled(self) -> bool: ...
@@ -23,6 +194,10 @@ def _make_handler(
 ) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802
+            if self.path in ("/", "/dashboard"):
+                self._send_html(200, _DASHBOARD_HTML)
+                return
+
             if self.path == "/health":
                 self._send_json(200, {"status": "ok", "running": bot.status()["running"]})
                 return
@@ -82,6 +257,14 @@ def _make_handler(
 
         def log_message(self, format: str, *args: object) -> None:  # noqa: A003
             return
+
+        def _send_html(self, code: int, body: str) -> None:
+            data = body.encode("utf-8")
+            self.send_response(code)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
 
         def _send_json(self, code: int, payload: dict[str, object]) -> None:
             data = json.dumps(payload).encode("utf-8")

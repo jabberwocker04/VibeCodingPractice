@@ -41,6 +41,14 @@ class DummyTelegramCommands:
         self.enabled = enabled
 
 
+def _raw_get(url: str, *, token: str | None = None) -> tuple[int, str]:
+    req = urllib.request.Request(url=url, method="GET")
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(req, timeout=2) as resp:
+        return resp.status, resp.read().decode("utf-8")
+
+
 def _json_get(url: str, *, token: str | None = None) -> dict[str, object]:
     req = urllib.request.Request(url=url, method="GET")
     if token:
@@ -148,6 +156,41 @@ class BotApiServerTests(unittest.TestCase):
         time.sleep(0.1)
         thread.join(timeout=2)
         self.assertFalse(thread.is_alive())
+
+
+class DashboardEndpointTests(unittest.TestCase):
+    def _start_server(self, *, api_token: str = "") -> tuple[BotApiServer, str]:
+        bot = DummyBot()
+        try:
+            server = BotApiServer(bot=bot, host="127.0.0.1", port=0, api_token=api_token)
+        except PermissionError:
+            self.skipTest("socket bind is not permitted in this environment")
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        host, port = server.server_address
+        return server, f"http://{host}:{port}"
+
+    def test_dashboard_root_returns_html(self) -> None:
+        server, base = self._start_server()
+        status, body = _raw_get(f"{base}/")
+        self.assertEqual(status, 200)
+        self.assertIn("<!DOCTYPE html>", body)
+        self.assertIn("Trading Bot Dashboard", body)
+        server.shutdown()
+
+    def test_dashboard_alias_returns_html(self) -> None:
+        server, base = self._start_server()
+        status, body = _raw_get(f"{base}/dashboard")
+        self.assertEqual(status, 200)
+        self.assertIn("<!DOCTYPE html>", body)
+        server.shutdown()
+
+    def test_dashboard_accessible_without_token(self) -> None:
+        """Dashboard page itself requires no auth even when api_token is set."""
+        server, base = self._start_server(api_token="secret")
+        status, body = _raw_get(f"{base}/")
+        self.assertEqual(status, 200)
+        self.assertIn("<!DOCTYPE html>", body)
+        server.shutdown()
 
 
 if __name__ == "__main__":
