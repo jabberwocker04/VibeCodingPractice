@@ -9,12 +9,15 @@ description = "Overseas stock trading bot scaffold for Namoo (NH)."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "VibeCodingPractice" }]
-dependencies = []
+dependencies = [
+    "yfinance>=0.2",
+]
 
 [project.scripts]
 namoo-bot = "namoo_overseas_bot.cli:main"
 namoo-bot-server = "namoo_overseas_bot.server_cli:main"
 namoo-telegram-check = "namoo_overseas_bot.telegram_check_cli:main"
+trade = "namoo_overseas_bot.trade_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

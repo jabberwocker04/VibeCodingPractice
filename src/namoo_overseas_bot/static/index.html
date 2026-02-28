@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자동매매봇 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0A0B10;
+    --card: #13151C;
+    --card2: #1A1C26;
+    --border: #22253A;
+    --blue: #3B82F6;
+    --blue-dim: #1D4ED8;
+    --green: #22C55E;
+    --red: #EF4444;
+    --yellow: #F59E0B;
+    --text: #F0F1F5;
+    --text2: #8B8FA8;
+    --text3: #5A5E78;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Pretendard', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--blue); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800; color: #fff;
+  }
+  .header-title { font-size: 18px; font-weight: 700; }
+  .header-symbol { font-size: 13px; color: var(--text2); }
+  .status-badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px;
+    background: var(--card2); font-size: 13px; font-weight: 600;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.3s;
+  }
+  .dot.running { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  .dot.paused  { background: var(--yellow); }
+  .dot.stopped { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── Layout ── */
+  .main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 80px; }
+
+  /* ── Stat Cards ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  @media(max-width:800px){ .stats-grid{ grid-template-columns: repeat(2,1fr); } }
+  .stat-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px 20px 16px;
+    border: 1px solid var(--border);
+  }
+  .stat-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; letter-spacing: .4px; }
+  .stat-value { font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+  .stat-sub { font-size: 12px; color: var(--text2); }
+  .up   { color: var(--green); }
+  .down { color: var(--red); }
+  .neutral { color: var(--text2); }
+
+  /* ── Chart ── */
+  .chart-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .chart-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .chart-title { font-size: 15px; font-weight: 600; }
+  .chart-price { font-size: 24px; font-weight: 700; }
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* ── Bottom 2-col ── */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  @media(max-width:700px){ .bottom-grid{ grid-template-columns:1fr; } }
+
+  /* ── Control Cards ── */
+  .control-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 20px;
+  }
+  .control-card h3 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 16px; letter-spacing: .4px; text-transform: uppercase; }
+
+  .form-row { margin-bottom: 14px; }
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: block; }
+  .form-input, .form-select {
+    width: 100%; padding: 10px 12px;
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-size: 14px; outline: none;
+    transition: border-color .2s;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--blue); }
+  .form-select option { background: var(--card2); }
+
+  .params-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 10px 18px; border: none; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--blue-dim); }
+  .btn-success { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+  .btn-danger  { background: rgba(239,68,68,.15);  color: var(--red);   border: 1px solid rgba(239,68,68,.3); }
+  .btn-warn    { background: rgba(245,158,11,.15); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+  .btn-ghost   { background: var(--card2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-full { width: 100%; margin-top: 4px; }
+
+  /* ── Bot Control Bar ── */
+  .control-bar {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .control-bar span { font-size: 13px; color: var(--text2); margin-right: 4px; }
+
+  /* ── Trades ── */
+  .trades-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 20px;
+  }
+  .trades-card h3 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 16px; letter-spacing: .4px; text-transform: uppercase; }
+  .trade-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .trade-row:last-child { border-bottom: none; }
+  .trade-side {
+    display: inline-block; padding: 3px 8px; border-radius: 6px;
+    font-size: 12px; font-weight: 700; margin-right: 8px;
+  }
+  .trade-buy  { background: rgba(34,197,94,.15); color: var(--green); }
+  .trade-sell { background: rgba(239,68,68,.15);  color: var(--red); }
+  .trade-info { font-size: 13px; }
+  .trade-time { font-size: 12px; color: var(--text3); }
+  .trade-price { font-size: 14px; font-weight: 600; }
+  .empty-msg { text-align: center; color: var(--text3); padding: 24px 0; font-size: 13px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--card2); border: 1px solid var(--border);
+    color: var(--text); padding: 12px 20px; border-radius: 12px;
+    font-size: 13px; font-weight: 500; z-index: 999;
+    opacity: 0; transition: opacity .3s;
+    pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ── Signal chip ── */
+  .signal-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+  }
+  .chip-buy   { background: rgba(34,197,94,.15); color: var(--green); }
+  .chip-sell  { background: rgba(239,68,68,.15);  color: var(--red); }
+  .chip-hold  { background: var(--card2); color: var(--text3); }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">B</div>
+    <div>
+      <div class="header-title" id="hdr-name">자동매매봇</div>
+      <div class="header-symbol" id="hdr-sym">로딩 중...</div>
+    </div>
+  </div>
+  <div class="status-badge">
+    <div class="dot" id="status-dot"></div>
+    <span id="status-text">연결 중</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ── Stat Cards ── -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">총 자산</div>
+      <div class="stat-value" id="s-equity">—</div>
+      <div class="stat-sub" id="s-pnl-pct">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">손 익</div>
+      <div class="stat-value" id="s-pnl">—</div>
+      <div class="stat-sub" id="s-trades">0회 거래</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">현금</div>
+      <div class="stat-value" id="s-cash">—</div>
+      <div class="stat-sub" id="s-position">0주 보유</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">전략 / 신호</div>
+      <div class="stat-value" style="font-size:16px" id="s-strategy">—</div>
+      <div class="stat-sub" id="s-signal">—</div>
+    </div>
+  </div>
+
+  <!-- ── Chart ── -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title" id="c-symbol">가격 차트</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px" id="c-last-tick">마지막 업데이트: —</div>
+      </div>
+      <div class="chart-price" id="c-price">—</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="priceChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Bot Control ── -->
+  <div class="control-bar">
+    <span>봇 제어</span>
+    <button class="btn btn-success" onclick="botCmd('resume')">▶ 재개</button>
+    <button class="btn btn-warn"    onclick="botCmd('pause')">⏸ 일시정지</button>
+    <button class="btn btn-danger"  onclick="botCmd('stop')" id="btn-stop">⏹ 중지</button>
+  </div>
+
+  <!-- ── Bottom 2-col ── -->
+  <div class="bottom-grid">
+
+    <!-- 전략 제어 -->
+    <div class="control-card">
+      <h3>전략 제어</h3>
+
+      <div class="form-row">
+        <label class="form-label">전략 선택</label>
+        <select class="form-select" id="sel-strategy" onchange="onStrategyChange()">
+          <option value="sma">SMA 크로스</option>
+          <option value="rsi">RSI</option>
+          <option value="macd">MACD</option>
+          <option value="bollinger">볼린저 밴드</option>
+        </select>
+      </div>
+
+      <!-- SMA params -->
+      <div id="params-sma" class="params-grid" style="display:none">
+        <div class="form-row">
+          <label class="form-label">단기 윈도우</label>
+          <input class="form-input" type="number" id="p-short_window" value="5" min="1">
+        </div>
+        <div class="form-row">
+          <label class="form-label">장기 윈도우</label>
+          <input class="form-input" type="number" id="p-long_window" value="20" min="2">
+        </div>
+      </div>
+      <!-- RSI params -->
+      <div id="params-rsi" style="display:none">
+        <div class="params-grid">
+          <div class="form-row">
+            <label class="form-label">기간 (period)</label>
+            <input class="form-input" type="number" id="p-period-rsi" value="14" min="2">
+          </div>
+          <div class="form-row">
+            <label class="form-label">과매도 (oversold)</label>
+            <input class="form-input" type="number" id="p-oversold" value="30" min="1" max="49">
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">과매수 (overbought)</label>
+          <input class="form-input" type="number" id="p-overbought" value="70" min="51" max="99">
+        </div>
+      </div>
+      <!-- MACD params -->
+      <div id="params-macd" class="params-grid" style="display:none">
+        <div class="form-row">
+          <label class="form-label">빠른 EMA</label>
+          <input class="form-input" type="number" id="p-fast_period" value="12" min="1">
+        </div>
+        <div class="form-row">
+          <label class="form-label">느린 EMA</label>
+          <input class="form-input" type="number" id="p-slow_period" value="26" min="2">
+        </div>
+        <div class="form-row">
+          <label class="form-label">시그널</label>
+          <input class="form-input" type="number" id="p-signal_period" value="9" min="1">
+        </div>
+      </div>
+      <!-- Bollinger params -->
+      <div id="params-bollinger" class="params-grid" style="display:none">
+        <div class="form-row">
+          <label class="form-label">기간 (period)</label>
+          <input class="form-input" type="number" id="p-period-bb" value="20" min="2">
+        </div>
+        <div class="form-row">
+          <label class="form-label">표준편차 배수</label>
+          <input class="form-input" type="number" id="p-std_dev" value="2.0" step="0.1" min="0.1">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-full" onclick="applyStrategy()">전략 교체 및 적용</button>
+        <button class="btn btn-ghost btn-full" onclick="applyParams()">파라미터만 수정</button>
+      </div>
+    </div>
+
+    <!-- 매매 설정 -->
+    <div class="control-card">
+      <h3>매매 설정</h3>
+
+      <div class="form-row">
+        <label class="form-label">1회 거래 수량 (주)</label>
+        <input class="form-input" type="number" id="cfg-quantity" value="1" min="1">
+      </div>
+      <div class="form-row">
+        <label class="form-label">최대 보유 수량 (주)</label>
+        <input class="form-input" type="number" id="cfg-max_position_qty" value="5" min="1">
+      </div>
+      <div class="form-row">
+        <label class="form-label">틱 간격 (초)</label>
+        <input class="form-input" type="number" id="cfg-tick_seconds" value="60" min="1">
+      </div>
+
+      <div class="divider"></div>
+      <button class="btn btn-primary btn-full" onclick="applyConfig()">설정 저장</button>
+
+      <div class="divider"></div>
+      <div style="font-size:12px;color:var(--text2)">
+        <div style="margin-bottom:6px;font-weight:600;color:var(--text3)">봇 정보</div>
+        <div id="info-interval">주기: —</div>
+        <div id="info-loop">틱 횟수: —</div>
+        <div id="info-started">시작: —</div>
+        <div id="info-error" style="color:var(--red);margin-top:4px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Recent Trades ── -->
+  <div class="trades-card">
+    <h3>최근 체결 내역</h3>
+    <div id="trade-list"><p class="empty-msg">체결 내역이 없습니다.</p></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ── //
+const API = '';  // same origin
+let chart, chartData = { labels:[], prices:[], buys:[], sells:[] };
+let currentStrategy = 'sma';
+let pollTimer;
+
+// ── Chart setup ── //
+function initChart() {
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: '가격',
+          data: [],
+          borderColor: '#3B82F6',
+          backgroundColor: 'rgba(59,130,246,0.08)',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: true,
+          yAxisID: 'y',
+        },
+        {
+          label: '매수',
+          data: [],
+          type: 'scatter',
+          borderColor: '#22C55E',
+          backgroundColor: '#22C55E',
+          pointRadius: 6,
+          pointStyle: 'triangle',
+          yAxisID: 'y',
+        },
+        {
+          label: '매도',
+          data: [],
+          type: 'scatter',
+          borderColor: '#EF4444',
+          backgroundColor: '#EF4444',
+          pointRadius: 6,
+          pointStyle: 'triangle',
+          rotation: 180,
+          yAxisID: 'y',
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode:'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: '#8B8FA8', font: { size: 11 }, boxWidth: 10, padding: 12 }
+        },
+        tooltip: {
+          backgroundColor: '#1A1C26',
+          borderColor: '#22253A',
+          borderWidth: 1,
+          titleColor: '#F0F1F5',
+          bodyColor: '#8B8FA8',
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === '가격') return ` $${Number(ctx.raw).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+              return ` ${ctx.dataset.label} $${Number(ctx.raw.y || ctx.raw).toLocaleString()}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#5A5E78', maxTicksLimit: 8, font:{size:11} },
+          grid: { color: '#1A1C26' }
+        },
+        y: {
+          position: 'right',
+          ticks: { color: '#5A5E78', font:{size:11},
+            callback: v => '$' + Number(v).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})
+          },
+          grid: { color: '#1A1C26' }
+        }
+      }
+    }
+  });
+}
+
+// ── Polling ── //
+async function fetchStatus() {
+  try {
+    const [statusRes, historyRes] = await Promise.all([
+      fetch(API + '/status'),
+      fetch(API + '/history'),
+    ]);
+    if (!statusRes.ok) return;
+    const s = await statusRes.json();
+    const h = historyRes.ok ? await historyRes.json() : { prices:[], trades:[] };
+    updateUI(s, h);
+  } catch(e) {
+    setStatusBadge('stopped', '연결 끊김');
+  }
+}
+
+function updateUI(s, h) {
+  // Header
+  document.getElementById('hdr-name').textContent = s.company_name || s.symbol || '자동매매봇';
+  document.getElementById('hdr-sym').textContent = s.symbol + ' · ' + s.strategy;
+
+  // Status badge
+  if (!s.running)      setStatusBadge('stopped', '중지됨');
+  else if (s.paused)   setStatusBadge('paused', '일시정지');
+  else                  setStatusBadge('running', '매매 중');
+
+  // Stat cards
+  const pnl = s.pnl || 0;
+  const pnlPct = s.pnl_pct || 0;
+  const pnlClass = pnl >= 0 ? 'up' : 'down';
+  const sign = pnl >= 0 ? '+' : '';
+
+  document.getElementById('s-equity').textContent = '$' + fmt(s.equity);
+  document.getElementById('s-pnl-pct').innerHTML = `<span class="${pnlClass}">${sign}${pnlPct.toFixed(2)}%</span>`;
+  document.getElementById('s-pnl').innerHTML = `<span class="${pnlClass}">${sign}$${fmt(pnl)}</span>`;
+  document.getElementById('s-trades').textContent = (s.trades || 0) + '회 거래';
+  document.getElementById('s-cash').textContent = '$' + fmt(s.cash);
+  document.getElementById('s-position').textContent = (s.position_qty || 0) + '주 보유';
+  document.getElementById('s-strategy').textContent = s.strategy || '—';
+
+  const sigMap = { buy:'매수 ▲', sell:'매도 ▼', hold:'대기' };
+  const sigClass = { buy:'chip-buy', sell:'chip-sell', hold:'chip-hold' };
+  const sig = (s.last_signal || 'hold').toLowerCase();
+  document.getElementById('s-signal').innerHTML = `<span class="signal-chip ${sigClass[sig]||'chip-hold'}">${sigMap[sig]||'대기'}</span>`;
+
+  // Chart header
+  document.getElementById('c-symbol').textContent = (s.company_name || s.symbol || '') + ' 가격 차트';
+  document.getElementById('c-price').textContent = s.last_price ? '$' + fmt(s.last_price) : '—';
+  if (s.last_tick_at) {
+    const d = new Date(s.last_tick_at);
+    document.getElementById('c-last-tick').textContent = '마지막 업데이트: ' + d.toLocaleTimeString('ko-KR');
+  }
+
+  // Info
+  document.getElementById('info-interval').textContent = '주기: ' + (s.interval || '—');
+  document.getElementById('info-loop').textContent = '틱 횟수: ' + (s.loop_count || 0) + '회';
+  if (s.started_at_utc) {
+    const d = new Date(s.started_at_utc);
+    document.getElementById('info-started').textContent = '시작: ' + d.toLocaleString('ko-KR');
+  }
+  document.getElementById('info-error').textContent = s.last_error ? '⚠ ' + s.last_error : '';
+
+  // Chart update
+  updateChart(h.prices || [], h.trades || []);
+
+  // Trades
+  updateTrades(h.trades || []);
+
+  // Sync config form (passive)
+  if (s.loop_count === 1) syncConfigForm(s);
+}
+
+function updateChart(prices, trades) {
+  if (!prices.length) return;
+
+  const labels = prices.map(p => {
+    const d = new Date(p.ts);
+    return d.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  });
+  const priceData = prices.map(p => p.price);
+
+  const buyPoints = prices
+    .map((p, i) => p.signal === 'buy'  ? {x: labels[i], y: p.price} : null)
+    .filter(Boolean);
+  const sellPoints = prices
+    .map((p, i) => p.signal === 'sell' ? {x: labels[i], y: p.price} : null)
+    .filter(Boolean);
+
+  chart.data.labels = labels;
+  chart.data.datasets[0].data = priceData;
+  chart.data.datasets[1].data = buyPoints;
+  chart.data.datasets[2].data = sellPoints;
+  chart.update('none');
+}
+
+function updateTrades(trades) {
+  const el = document.getElementById('trade-list');
+  if (!trades.length) {
+    el.innerHTML = '<p class="empty-msg">체결 내역이 없습니다.</p>';
+    return;
+  }
+  el.innerHTML = [...trades].reverse().slice(0, 20).map(t => {
+    const d = new Date(t.ts);
+    const time = d.toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const sideClass = t.side === 'buy' ? 'trade-buy' : 'trade-sell';
+    const sideText  = t.side === 'buy' ? '매수' : '매도';
+    return `
+      <div class="trade-row">
+        <div class="trade-info">
+          <span class="trade-side ${sideClass}">${sideText}</span>
+          <span>${t.symbol}</span>
+          <span style="color:var(--text2);margin-left:6px">${t.qty}주</span>
+        </div>
+        <div style="text-align:right">
+          <div class="trade-price">$${fmt(t.price)}</div>
+          <div class="trade-time">${time}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function syncConfigForm(s) {
+  // Sync strategy dropdown on first load
+  if (s.strategy) {
+    const name = s.strategy.toLowerCase().startsWith('sma') ? 'sma'
+               : s.strategy.toLowerCase().startsWith('rsi') ? 'rsi'
+               : s.strategy.toLowerCase().startsWith('macd') ? 'macd'
+               : s.strategy.toLowerCase().startsWith('bollinger') ? 'bollinger'
+               : null;
+    if (name) {
+      currentStrategy = name;
+      document.getElementById('sel-strategy').value = name;
+      showParams(name);
+    }
+  }
+  // Fetch config
+  fetch(API + '/config').then(r => r.json()).then(cfg => {
+    if (cfg.quantity)           document.getElementById('cfg-quantity').value = cfg.quantity;
+    if (cfg.max_position_qty)   document.getElementById('cfg-max_position_qty').value = cfg.max_position_qty;
+    if (cfg.tick_seconds)       document.getElementById('cfg-tick_seconds').value = cfg.tick_seconds;
+  }).catch(()=>{});
+  // Fetch strategy params
+  fetch(API + '/strategy').then(r => r.json()).then(info => {
+    const p = info.params || {};
+    // SMA
+    if (p.short_window !== undefined) document.getElementById('p-short_window').value = p.short_window;
+    if (p.long_window  !== undefined) document.getElementById('p-long_window').value  = p.long_window;
+    // RSI
+    if (p.period !== undefined && info.name.startsWith('RSI')) {
+      document.getElementById('p-period-rsi').value = p.period;
+      if (p.oversold   !== undefined) document.getElementById('p-oversold').value   = p.oversold;
+      if (p.overbought !== undefined) document.getElementById('p-overbought').value = p.overbought;
+    }
+    // MACD
+    if (p.fast_period   !== undefined) document.getElementById('p-fast_period').value   = p.fast_period;
+    if (p.slow_period   !== undefined) document.getElementById('p-slow_period').value   = p.slow_period;
+    if (p.signal_period !== undefined) document.getElementById('p-signal_period').value = p.signal_period;
+    // Bollinger
+    if (p.period !== undefined && info.name.startsWith('Bollinger')) {
+      document.getElementById('p-period-bb').value = p.period;
+    }
+    if (p.std_dev !== undefined) document.getElementById('p-std_dev').value = p.std_dev;
+  }).catch(()=>{});
+}
+
+// ── Strategy params panel ── //
+function onStrategyChange() {
+  currentStrategy = document.getElementById('sel-strategy').value;
+  showParams(currentStrategy);
+}
+
+function showParams(name) {
+  ['sma','rsi','macd','bollinger'].forEach(n => {
+    document.getElementById('params-' + n).style.display = (n === name) ? '' : 'none';
+  });
+}
+
+function getParams() {
+  const s = currentStrategy;
+  if (s === 'sma') return {
+    short_window: +document.getElementById('p-short_window').value,
+    long_window:  +document.getElementById('p-long_window').value,
+  };
+  if (s === 'rsi') return {
+    period:     +document.getElementById('p-period-rsi').value,
+    oversold:   +document.getElementById('p-oversold').value,
+    overbought: +document.getElementById('p-overbought').value,
+  };
+  if (s === 'macd') return {
+    fast_period:   +document.getElementById('p-fast_period').value,
+    slow_period:   +document.getElementById('p-slow_period').value,
+    signal_period: +document.getElementById('p-signal_period').value,
+  };
+  if (s === 'bollinger') return {
+    period:  +document.getElementById('p-period-bb').value,
+    std_dev: +document.getElementById('p-std_dev').value,
+  };
+  return {};
+}
+
+// ── API calls ── //
+async function botCmd(cmd) {
+  try {
+    const r = await fetch(API + '/' + cmd, {method:'POST'});
+    const j = await r.json();
+    if (j.ok || j.stopped) toast('✓ ' + {pause:'일시정지',resume:'재개',stop:'중지'}[cmd] + ' 완료');
+    else toast('⚠ ' + (j.error || '오류'), true);
+    fetchStatus();
+  } catch(e) { toast('⚠ 서버 연결 오류', true); }
+}
+
+async function applyStrategy() {
+  try {
+    const body = { name: currentStrategy, params: getParams() };
+    const r = await fetch(API + '/strategy', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (j.ok) toast('✓ 전략 교체: ' + j.name);
+    else toast('⚠ ' + (j.error || '교체 실패'), true);
+    fetchStatus();
+  } catch(e) { toast('⚠ 서버 연결 오류', true); }
+}
+
+async function applyParams() {
+  try {
+    const r = await fetch(API + '/strategy/params', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(getParams()),
+    });
+    const j = await r.json();
+    if (j.ok) toast('✓ 파라미터 수정 완료: ' + j.name);
+    else toast('⚠ ' + (j.error || '수정 실패'), true);
+    fetchStatus();
+  } catch(e) { toast('⚠ 서버 연결 오류', true); }
+}
+
+async function applyConfig() {
+  try {
+    const body = {
+      quantity:          +document.getElementById('cfg-quantity').value,
+      max_position_qty:  +document.getElementById('cfg-max_position_qty').value,
+      tick_seconds:      +document.getElementById('cfg-tick_seconds').value,
+    };
+    const r = await fetch(API + '/config', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (j.ok) toast('✓ 설정 저장 완료');
+    else toast('⚠ ' + (j.error || '저장 실패'), true);
+    fetchStatus();
+  } catch(e) { toast('⚠ 서버 연결 오류', true); }
+}
+
+// ── Helpers ── //
+function fmt(v) {
+  if (v === null || v === undefined) return '—';
+  return Number(v).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function setStatusBadge(type, text) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'dot ' + type;
+  document.getElementById('status-text').textContent = text;
+}
+
+let toastTimer;
+function toast(msg, isErr=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.color = isErr ? 'var(--red)' : 'var(--green)';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── Init ── //
+document.addEventListener('DOMContentLoaded', () => {
+  initChart();
+  showParams('sma');
+  fetchStatus();
+  pollTimer = setInterval(fetchStatus, 3000);
+});
+</script>
+</body>
+</html>

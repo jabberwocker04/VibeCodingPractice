@@ -22,6 +22,12 @@ class BotConfig:
     telegram_chat_id: str = ""
     telegram_commands_enabled: bool = True
     telegram_poll_seconds: float = 1.0
+    # KIS (한국투자증권) 계좌 설정
+    kis_app_key: str = ""
+    kis_app_secret: str = ""
+    kis_account_no: str = ""
+    kis_is_virtual: bool = True
+    kis_exchange_code: str = "NASD"
 
     @classmethod
     def from_env(cls) -> "BotConfig":
@@ -54,6 +60,11 @@ class BotConfig:
                 default=True,
             ),
             telegram_poll_seconds=float(os.getenv("TELEGRAM_POLL_SECONDS", "1.0")),
+            kis_app_key=os.getenv("KIS_APP_KEY", ""),
+            kis_app_secret=os.getenv("KIS_APP_SECRET", ""),
+            kis_account_no=os.getenv("KIS_ACCOUNT_NO", ""),
+            kis_is_virtual=_env_bool("KIS_IS_VIRTUAL", default=True),
+            kis_exchange_code=os.getenv("KIS_EXCHANGE_CODE", "NASD"),
         )
 
 
